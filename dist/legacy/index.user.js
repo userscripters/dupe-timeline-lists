@@ -67,7 +67,8 @@ window.addEventListener("load", function () {
             return;
         }
         [
-            ".dupe-timeline-list { list-style: none; margin-left: 0; }",
+            "ul.dupe-timeline-list { list-style: none; margin-left: 0; }",
+            "ol.dupe-timeline-list { margin-left: 1em; }",
             ".dupe-timeline-list:last-child { margin-bottom: 0; }"
         ].forEach(function (r) { return sheet.insertRule(r); });
     };
@@ -86,8 +87,9 @@ window.addEventListener("load", function () {
         return span;
     };
     var toHref = function (anchor) { return anchor.href; };
-    var toUnorderedList = function (nodes) {
-        var ul = document.createElement("ul");
+    var toList = function (nodes, ordered) {
+        if (ordered === void 0) { ordered = false; }
+        var ul = document.createElement(ordered ? "ol" : "ul");
         ul.classList.add("dupe-timeline-list");
         var items = nodes.map(function (node) {
             var li = document.createElement("li");
@@ -157,10 +159,10 @@ window.addEventListener("load", function () {
         var numAdded = addedLinks.length;
         var numRemoved = removedLinks.length;
         if (numAdded) {
-            commentCell.append(toSpan("Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target"))), toUnorderedList(addedLinks));
+            commentCell.append(toSpan("Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target"))), toList(addedLinks, numAdded > 1));
         }
         if (numRemoved) {
-            commentCell.append(toSpan("Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target"))), toUnorderedList(removedLinks));
+            commentCell.append(toSpan("Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target"))), toList(removedLinks, numRemoved > 1));
         }
     });
 }, { once: true });

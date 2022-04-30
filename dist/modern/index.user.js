@@ -42,7 +42,8 @@ window.addEventListener("load", () => {
             return;
         }
         [
-            ".dupe-timeline-list { list-style: none; margin-left: 0; }",
+            "ul.dupe-timeline-list { list-style: none; margin-left: 0; }",
+            "ol.dupe-timeline-list { margin-left: 1em; }",
             ".dupe-timeline-list:last-child { margin-bottom: 0; }"
         ].forEach((r) => sheet.insertRule(r));
     };
@@ -61,8 +62,8 @@ window.addEventListener("load", () => {
         return span;
     };
     const toHref = (anchor) => anchor.href;
-    const toUnorderedList = (nodes) => {
-        const ul = document.createElement("ul");
+    const toList = (nodes, ordered = false) => {
+        const ul = document.createElement(ordered ? "ol" : "ul");
         ul.classList.add("dupe-timeline-list");
         const items = nodes.map((node) => {
             const li = document.createElement("li");
@@ -125,10 +126,10 @@ window.addEventListener("load", () => {
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
         if (numAdded) {
-            commentCell.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toUnorderedList(addedLinks));
+            commentCell.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toList(addedLinks, numAdded > 1));
         }
         if (numRemoved) {
-            commentCell.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toUnorderedList(removedLinks));
+            commentCell.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toList(removedLinks, numRemoved > 1));
         }
     });
 }, { once: true });

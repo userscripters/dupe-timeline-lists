@@ -17,7 +17,8 @@ window.addEventListener("load", () => {
         }
 
         [
-            ".dupe-timeline-list { list-style: none; margin-left: 0; }",
+            "ul.dupe-timeline-list { list-style: none; margin-left: 0; }",
+            "ol.dupe-timeline-list { margin-left: 1em; }",
             ".dupe-timeline-list:last-child { margin-bottom: 0; }"
         ].forEach((r) => sheet.insertRule(r));
     };
@@ -42,8 +43,8 @@ window.addEventListener("load", () => {
 
     const toHref = (anchor: HTMLAnchorElement): string => anchor.href;
 
-    const toUnorderedList = (nodes: Array<ChildNode | Node>): HTMLUListElement => {
-        const ul = document.createElement("ul");
+    const toList = (nodes: Array<ChildNode | Node>, ordered = false): HTMLUListElement => {
+        const ul = document.createElement(ordered ? "ol" : "ul");
         ul.classList.add("dupe-timeline-list");
 
         const items = nodes.map((node) => {
@@ -130,14 +131,14 @@ window.addEventListener("load", () => {
         if (numAdded) {
             commentCell.append(
                 toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`),
-                toUnorderedList(addedLinks)
+                toList(addedLinks, numAdded > 1)
             );
         }
 
         if (numRemoved) {
             commentCell.append(
                 toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`),
-                toUnorderedList(removedLinks)
+                toList(removedLinks, numRemoved > 1)
             );
         }
     });
