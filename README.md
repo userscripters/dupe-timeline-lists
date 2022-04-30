@@ -6,7 +6,7 @@
 | Name | @userscripters/dupe-timeline-lists |
 | Description | Userscript for properly displaying duplicate lists in post timelines |
 | License | [GPL-3.0-or-later](https://spdx.org/licenses/GPL-3.0-or-later) |
-| Version | 1.0.0 |
+| Version | 1.1.0 |
 
 # Support
 
