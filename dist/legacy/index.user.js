@@ -157,10 +157,10 @@ window.addEventListener("load", function () {
         var numAdded = addedLinks.length;
         var numRemoved = removedLinks.length;
         if (numAdded) {
-            commentCell.append(toSpan("Added duplicate ".concat(pluralise(numAdded, "target"))), toUnorderedList(addedLinks));
+            commentCell.append(toSpan("Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target"))), toUnorderedList(addedLinks));
         }
         if (numRemoved) {
-            commentCell.append(toSpan("Removed duplicate ".concat(pluralise(numRemoved, "target"))), toUnorderedList(removedLinks));
+            commentCell.append(toSpan("Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target"))), toUnorderedList(removedLinks));
         }
     });
 }, { once: true });

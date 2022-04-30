@@ -129,14 +129,14 @@ window.addEventListener("load", () => {
 
         if (numAdded) {
             commentCell.append(
-                toSpan(`Added duplicate ${pluralise(numAdded, "target")}`),
+                toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`),
                 toUnorderedList(addedLinks)
             );
         }
 
         if (numRemoved) {
             commentCell.append(
-                toSpan(`Removed duplicate ${pluralise(numRemoved, "target")}`),
+                toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`),
                 toUnorderedList(removedLinks)
             );
         }

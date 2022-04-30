@@ -125,10 +125,10 @@ window.addEventListener("load", () => {
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
         if (numAdded) {
-            commentCell.append(toSpan(`Added duplicate ${pluralise(numAdded, "target")}`), toUnorderedList(addedLinks));
+            commentCell.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toUnorderedList(addedLinks));
         }
         if (numRemoved) {
-            commentCell.append(toSpan(`Removed duplicate ${pluralise(numRemoved, "target")}`), toUnorderedList(removedLinks));
+            commentCell.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toUnorderedList(removedLinks));
         }
     });
 }, { once: true });
