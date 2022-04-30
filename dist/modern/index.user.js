@@ -5,25 +5,45 @@
 // @grant           GM_getValue
 // @grant           GM_setValue
 // @homepage        https://github.com/userscripters/dupe-timeline-lists#readme
+// @match           https://*.stackexchange.com/posts/*/revisions*
 // @match           https://*.stackexchange.com/posts/*/timeline*
+// @match           https://askubuntu.com/posts/*/revisions*
 // @match           https://askubuntu.com/posts/*/timeline*
+// @match           https://es.meta.stackoverflow.com/posts/*/revisions*
 // @match           https://es.meta.stackoverflow.com/posts/*/timeline*
+// @match           https://es.stackoverflow.com/posts/*/revisions*
 // @match           https://es.stackoverflow.com/posts/*/timeline*
+// @match           https://ja.meta.stackoverflow.com/posts/*/revisions*
 // @match           https://ja.meta.stackoverflow.com/posts/*/timeline*
+// @match           https://ja.stackoverflow.com/posts/*/revisions*
 // @match           https://ja.stackoverflow.com/posts/*/timeline*
+// @match           https://mathoverflow.net/posts/*/revisions*
 // @match           https://mathoverflow.net/posts/*/timeline*
+// @match           https://meta.askubuntu.com/posts/*/revisions*
 // @match           https://meta.askubuntu.com/posts/*/timeline*
+// @match           https://meta.mathoverflow.net/posts/*/revisions*
 // @match           https://meta.mathoverflow.net/posts/*/timeline*
+// @match           https://meta.serverfault.com/posts/*/revisions*
 // @match           https://meta.serverfault.com/posts/*/timeline*
+// @match           https://meta.stackoverflow.com/posts/*/revisions*
 // @match           https://meta.stackoverflow.com/posts/*/timeline*
+// @match           https://meta.superuser.com/posts/*/revisions*
 // @match           https://meta.superuser.com/posts/*/timeline*
+// @match           https://pt.meta.stackoverflow.com/posts/*/revisions*
 // @match           https://pt.meta.stackoverflow.com/posts/*/timeline*
+// @match           https://pt.stackoverflow.com/posts/*/revisions*
 // @match           https://pt.stackoverflow.com/posts/*/timeline*
+// @match           https://ru.meta.stackoverflow.com/posts/*/revisions*
 // @match           https://ru.meta.stackoverflow.com/posts/*/timeline*
+// @match           https://ru.stackoverflow.com/posts/*/revisions*
 // @match           https://ru.stackoverflow.com/posts/*/timeline*
+// @match           https://serverfault.com/posts/*/revisions*
 // @match           https://serverfault.com/posts/*/timeline*
+// @match           https://stackapps.com/posts/*/revisions*
 // @match           https://stackapps.com/posts/*/timeline*
+// @match           https://stackoverflow.com/posts/*/revisions*
 // @match           https://stackoverflow.com/posts/*/timeline*
+// @match           https://superuser.com/posts/*/revisions*
 // @match           https://superuser.com/posts/*/timeline*
 // @name            Dupe Timeline Lists
 // @namespace       userscripters
@@ -84,34 +104,10 @@ window.addEventListener("load", async () => {
         return result;
     };
     const pluralise = (num, singular, suffix = "s") => `${singular}${num === 1 ? "" : suffix}`;
-    const scriptName = "dupe-timeline-lists";
-    const duplicateListEditAction = "duplicates list edited";
-    const fromToSeparatorText = " to ";
-    appendStyles();
-    const timelineTable = document.querySelector(".post-timeline");
-    if (!timelineTable) {
-        console.debug(`[${scriptName}] missing timeline table`);
-        return;
-    }
-    const storage = Store.locateStorage();
-    const store = new Store.default(scriptName, storage);
-    const key = "always-use-lists";
-    const alwaysUseLists = await store.load(key, false);
-    await store.save(key, alwaysUseLists);
-    timelineTable.querySelectorAll("tr").forEach((row) => {
-        var _a;
-        const { dataset } = row;
-        const { eventtype } = dataset;
-        if (eventtype !== "history")
-            return;
-        const { cells } = row;
-        const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
-        const action = ((_a = actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
-        if (action !== duplicateListEditAction)
-            return;
-        const commentContainer = commentCell.querySelector("span");
+    const processEntry = (entryContainer, type) => {
+        const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
-            console.debug(`[${scriptName}] missing duplicate list edit timeline entry container`);
+            console.debug(`[${scriptName}] missing duplicate list edit ${type} entry container`);
             return;
         }
         const { childNodes } = commentContainer;
@@ -130,14 +126,57 @@ window.addEventListener("load", async () => {
         });
         const addedLinks = added.map((url) => toAnchor(url, anchorTitles[url]));
         const removedLinks = removed.map((url) => toAnchor(url, anchorTitles[url]));
-        clear(commentCell);
+        clear(entryContainer);
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
         if (numAdded) {
-            commentCell.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toList(addedLinks, alwaysUseLists || numAdded > 1));
+            entryContainer.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toList(addedLinks, alwaysUseLists || numAdded > 1));
         }
         if (numRemoved) {
-            commentCell.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toList(removedLinks, alwaysUseLists || numRemoved > 1));
+            entryContainer.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toList(removedLinks, alwaysUseLists || numRemoved > 1));
         }
+    };
+    const scriptName = "dupe-timeline-lists";
+    const duplicateListEditAction = "duplicates list edited";
+    const fromToSeparatorText = " to ";
+    appendStyles();
+    const storage = Store.locateStorage();
+    const store = new Store.default(scriptName, storage);
+    const key = "always-use-lists";
+    const alwaysUseLists = await store.load(key, false);
+    await store.save(key, alwaysUseLists);
+    if (location.pathname.includes("revisions")) {
+        const revisionsTable = document.querySelector(".js-revisions");
+        if (!revisionsTable) {
+            console.debug(`[${scriptName}] missing revisions table`);
+            return;
+        }
+        revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
+            var _a;
+            const [_numCell, commentCell, _authorCell] = row.children;
+            const comment = ((_a = commentCell === null || commentCell === void 0 ? void 0 : commentCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+            if (!comment.includes("duplicates list edited"))
+                return;
+            processEntry(commentCell, "revisions");
+        });
+        return;
+    }
+    const timelineTable = document.querySelector(".post-timeline");
+    if (!timelineTable) {
+        console.debug(`[${scriptName}] missing timeline table`);
+        return;
+    }
+    timelineTable.querySelectorAll("tr").forEach((row) => {
+        var _a;
+        const { dataset } = row;
+        const { eventtype } = dataset;
+        if (eventtype !== "history")
+            return;
+        const { cells } = row;
+        const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
+        const action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+        if (action !== duplicateListEditAction)
+            return;
+        processEntry(commentCell, "timeline");
     });
 }, { once: true });

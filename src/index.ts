@@ -72,41 +72,10 @@ window.addEventListener("load", async () => {
 
     const pluralise = (num: number, singular: string, suffix = "s") => `${singular}${num === 1 ? "" : suffix}`;
 
-    const scriptName = "dupe-timeline-lists";
-    const duplicateListEditAction = "duplicates list edited";
-    const fromToSeparatorText = " to ";
-
-    appendStyles();
-
-    const timelineTable = document.querySelector<HTMLTableElement>(".post-timeline");
-    if (!timelineTable) {
-        console.debug(`[${scriptName}] missing timeline table`);
-        return;
-    }
-
-    const storage = Store.locateStorage();
-    const store = new Store.default(scriptName, storage);
-
-    const key = "always-use-lists";
-    const alwaysUseLists = await store.load(key, false);
-    await store.save(key, alwaysUseLists);
-
-    timelineTable.querySelectorAll("tr").forEach((row) => {
-        const { dataset } = row;
-
-        const { eventtype } = dataset as { eventtype?: TimelineEventType; };
-        if (eventtype !== "history") return;
-
-        const { cells } = row;
-
-        const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
-
-        const action = actionCell.textContent?.trim() || "";
-        if (action !== duplicateListEditAction) return;
-
-        const commentContainer = commentCell.querySelector("span");
+    const processEntry = (entryContainer: Element, type: "revisions" | "timeline") => {
+        const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
-            console.debug(`[${scriptName}] missing duplicate list edit timeline entry container`);
+            console.debug(`[${scriptName}] missing duplicate list edit ${type} entry container`);
             return;
         }
 
@@ -132,24 +101,79 @@ window.addEventListener("load", async () => {
         const addedLinks = added.map((url) => toAnchor(url, anchorTitles[url]));
         const removedLinks = removed.map((url) => toAnchor(url, anchorTitles[url]));
 
-        clear(commentCell);
+        clear(entryContainer);
 
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
 
         if (numAdded) {
-            commentCell.append(
+            entryContainer.append(
                 toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`),
                 toList(addedLinks, alwaysUseLists || numAdded > 1)
             );
         }
 
         if (numRemoved) {
-            commentCell.append(
+            entryContainer.append(
                 toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`),
                 toList(removedLinks, alwaysUseLists || numRemoved > 1)
             );
         }
+    };
+
+    const scriptName = "dupe-timeline-lists";
+    const duplicateListEditAction = "duplicates list edited";
+    const fromToSeparatorText = " to ";
+
+    appendStyles();
+
+    const storage = Store.locateStorage();
+    const store = new Store.default(scriptName, storage);
+
+    const key = "always-use-lists";
+    const alwaysUseLists = await store.load(key, false);
+    await store.save(key, alwaysUseLists);
+
+    if (location.pathname.includes("revisions")) {
+        const revisionsTable = document.querySelector(".js-revisions");
+        if (!revisionsTable) {
+            console.debug(`[${scriptName}] missing revisions table`);
+            return;
+        }
+
+        revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
+            const [_numCell, commentCell, _authorCell] = row.children;
+
+            // there are no action types in the revisions table
+            const comment = commentCell?.textContent?.trim() || "";
+            if (!comment.includes("duplicates list edited")) return;
+
+            processEntry(commentCell, "revisions");
+        });
+
+        return;
+    }
+
+    const timelineTable = document.querySelector<HTMLTableElement>(".post-timeline");
+    if (!timelineTable) {
+        console.debug(`[${scriptName}] missing timeline table`);
+        return;
+    }
+
+    timelineTable.querySelectorAll("tr").forEach((row) => {
+        const { dataset } = row;
+
+        const { eventtype } = dataset as { eventtype?: TimelineEventType; };
+        if (eventtype !== "history") return;
+
+        const { cells } = row;
+
+        const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
+
+        const action = actionCell?.textContent?.trim() || "";
+        if (action !== duplicateListEditAction) return;
+
+        processEntry(commentCell, "timeline");
     });
 
 }, { once: true });

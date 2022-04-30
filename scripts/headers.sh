@@ -5,7 +5,7 @@ output=$dist"/headers.js"
 
 generate tampermonkey \
     -o $output \
-    -m meta all "https://domain/posts/*/timeline*" \
+    -m meta all "https://domain/posts/*/timeline*|revisions*" \
     --require "https://github.com/userscripters/storage/raw/master/dist/browser.js" \
     --grant get set delete \
     --collapse \
