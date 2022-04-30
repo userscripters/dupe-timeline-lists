@@ -1,7 +1,9 @@
 // ==UserScript==
 // @author          Oleg Valter <oleg.a.valter@gmail.com>
 // @description     Userscript for properly displaying duplicate lists in post timelines
-// @grant           none
+// @grant           GM_deleteValue
+// @grant           GM_getValue
+// @grant           GM_setValue
 // @homepage        https://github.com/userscripters/dupe-timeline-lists#readme
 // @match           https://*.stackexchange.com/posts/*/timeline*
 // @match           https://askubuntu.com/posts/*/timeline*
@@ -25,6 +27,7 @@
 // @match           https://superuser.com/posts/*/timeline*
 // @name            Dupe Timeline Lists
 // @namespace       userscripters
+// @require         https://github.com/userscripters/storage/raw/master/dist/browser.js
 // @run-at          document-start
 // @source          git+https://github.com/userscripters/dupe-timeline-lists.git
 // @supportURL      https://github.com/userscripters/dupe-timeline-lists/issues
@@ -32,7 +35,7 @@
 // ==/UserScript==
 
 "use strict";
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
     const appendStyles = () => {
         const style = document.createElement("style");
         document.head.append(style);
@@ -90,6 +93,11 @@ window.addEventListener("load", () => {
         console.debug(`[${scriptName}] missing timeline table`);
         return;
     }
+    const storage = Store.locateStorage();
+    const store = new Store.default(scriptName, storage);
+    const key = "always-use-lists";
+    const alwaysUseLists = await store.load(key, false);
+    await store.save(key, alwaysUseLists);
     timelineTable.querySelectorAll("tr").forEach((row) => {
         var _a;
         const { dataset } = row;
@@ -126,10 +134,10 @@ window.addEventListener("load", () => {
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
         if (numAdded) {
-            commentCell.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toList(addedLinks, numAdded > 1));
+            commentCell.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toList(addedLinks, alwaysUseLists || numAdded > 1));
         }
         if (numRemoved) {
-            commentCell.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toList(removedLinks, numRemoved > 1));
+            commentCell.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toList(removedLinks, alwaysUseLists || numRemoved > 1));
         }
     });
 }, { once: true });

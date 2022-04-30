@@ -1,7 +1,9 @@
 // ==UserScript==
 // @author          Oleg Valter <oleg.a.valter@gmail.com>
 // @description     Userscript for properly displaying duplicate lists in post timelines
-// @grant           none
+// @grant           GM_deleteValue
+// @grant           GM_getValue
+// @grant           GM_setValue
 // @homepage        https://github.com/userscripters/dupe-timeline-lists#readme
 // @match           https://*.stackexchange.com/posts/*/timeline*
 // @match           https://askubuntu.com/posts/*/timeline*
@@ -25,6 +27,7 @@
 // @match           https://superuser.com/posts/*/timeline*
 // @name            Dupe Timeline Lists
 // @namespace       userscripters
+// @require         https://github.com/userscripters/storage/raw/master/dist/browser.js
 // @run-at          document-start
 // @source          git+https://github.com/userscripters/dupe-timeline-lists.git
 // @supportURL      https://github.com/userscripters/dupe-timeline-lists/issues

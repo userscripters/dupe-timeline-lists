@@ -5,7 +5,9 @@ type TimelineEventType =
     | "history"
     | "voteaggregate";
 
-window.addEventListener("load", () => {
+declare const Store: typeof import("@userscripters/storage");
+
+window.addEventListener("load", async () => {
 
     const appendStyles = () => {
         const style = document.createElement("style");
@@ -82,6 +84,13 @@ window.addEventListener("load", () => {
         return;
     }
 
+    const storage = Store.locateStorage();
+    const store = new Store.default(scriptName, storage);
+
+    const key = "always-use-lists";
+    const alwaysUseLists = await store.load(key, false);
+    await store.save(key, alwaysUseLists);
+
     timelineTable.querySelectorAll("tr").forEach((row) => {
         const { dataset } = row;
 
@@ -131,14 +140,14 @@ window.addEventListener("load", () => {
         if (numAdded) {
             commentCell.append(
                 toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`),
-                toList(addedLinks, numAdded > 1)
+                toList(addedLinks, alwaysUseLists || numAdded > 1)
             );
         }
 
         if (numRemoved) {
             commentCell.append(
                 toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`),
-                toList(removedLinks, numRemoved > 1)
+                toList(removedLinks, alwaysUseLists || numRemoved > 1)
             );
         }
     });
