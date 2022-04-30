@@ -5,6 +5,9 @@
         "ts",
         "tsx"
     ],
+    "loader": [
+        "ts-node/esm"
+    ],
     "spec": [
         "test/**/*.spec.*"
     ]
