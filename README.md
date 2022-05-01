@@ -7,6 +7,8 @@
 | Description | Userscript for properly displaying duplicate lists in post timelines |
 | License | [GPL-3.0-or-later](https://spdx.org/licenses/GPL-3.0-or-later) |
 | Version | 1.2.0 |
+# Screenshots
+![https://i.stack.imgur.com/kgTUf.png](https://i.stack.imgur.com/kgTUf.png)
 
 # Support
 
