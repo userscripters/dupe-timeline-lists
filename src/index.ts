@@ -79,7 +79,7 @@ window.addEventListener("load", async () => {
         return postId;
     };
 
-    const processEntry = async (entryContainer: Element, type: "revisions" | "timeline") => {
+    const processEntry = async (entryContainer: Element, type: "revisions" | "timeline", revisionNum?: string | number) => {
         const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
             console.debug(`[${scriptName}] missing duplicate list edit ${type} entry container`);
@@ -149,13 +149,16 @@ window.addEventListener("load", async () => {
         }
 
         revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
-            const [_numCell, commentCell, _authorCell] = row.children;
+            const [numCell, commentCell, _authorCell] = row.children;
 
             // there are no action types in the revisions table
             const comment = commentCell?.textContent?.trim() || "";
             if (!comment.includes("duplicates list edited")) return;
 
-            processEntry(commentCell, "revisions");
+            const revisionNum = numCell?.textContent?.trim() || "";
+            if (!revisionNum || Number.isNaN(+revisionNum)) return;
+
+            processEntry(commentCell, "revisions", revisionNum);
         });
 
         return;
@@ -166,6 +169,8 @@ window.addEventListener("load", async () => {
         console.debug(`[${scriptName}] missing timeline table`);
         return;
     }
+
+    const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
 
     timelineTable.querySelectorAll("tr").forEach((row) => {
         const { dataset } = row;
@@ -180,7 +185,19 @@ window.addEventListener("load", async () => {
         const action = actionCell?.textContent?.trim() || "";
         if (action !== duplicateListEditAction) return;
 
-        processEntry(commentCell, "timeline");
+        const revisionNum = [...timelineTable.rows].reduce((a, c) => {
+            const [_dc, tc, ac] = c.cells;
+
+            const type = tc?.textContent?.trim() || "";
+            if (type !== "history") return a;
+
+            const action = ac?.textContent?.trim() || "";
+            if (!revisionActions.has(action)) return a;
+
+            return a + 1;
+        }, 0);
+
+        processEntry(commentCell, "timeline", revisionNum);
     });
 
 }, { once: true });
