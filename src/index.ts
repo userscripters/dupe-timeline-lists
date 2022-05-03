@@ -72,7 +72,14 @@ window.addEventListener("load", async () => {
 
     const pluralise = (num: number, singular: string, suffix = "s") => `${singular}${num === 1 ? "" : suffix}`;
 
-    const processEntry = (entryContainer: Element, type: "revisions" | "timeline") => {
+    const getPostId = (): string | undefined => {
+        const { pathname } = location;
+        // https://regex101.com/r/3OD4V9/1
+        const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
+        return postId;
+    };
+
+    const processEntry = async (entryContainer: Element, type: "revisions" | "timeline") => {
         const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
             console.debug(`[${scriptName}] missing duplicate list edit ${type} entry container`);
