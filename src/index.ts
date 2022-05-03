@@ -5,6 +5,15 @@ type TimelineEventType =
     | "history"
     | "voteaggregate";
 
+interface ListViewConfig {
+    before?: Array<string | HTMLAnchorElement>,
+    after?: Array<string | HTMLAnchorElement>;
+    ordered: [
+        before?: boolean,
+        after?: boolean
+    ];
+};
+
 declare const Store: typeof import("@userscripters/storage");
 
 window.addEventListener("load", async () => {
@@ -77,6 +86,17 @@ window.addEventListener("load", async () => {
         // https://regex101.com/r/3OD4V9/1
         const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
         return postId;
+    };
+
+    const makeListView = (
+        container: Element,
+        title: string,
+        { before, after, ordered }: ListViewConfig) => {
+        container.append(toSpan(title));
+
+        const [beforeOrdered, afterOrdered] = ordered;
+        if (before) container.append(toList(before, beforeOrdered));
+        if (after) container.append(toList(after, afterOrdered));
     };
 
     const processEntry = async (entryContainer: Element, type: "revisions" | "timeline", revisionNum?: string | number) => {
