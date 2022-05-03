@@ -199,7 +199,7 @@ window.addEventListener("load", async () => {
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
 
-        if (numAdded || numRemoved && useDiffView) {
+        if ((numAdded || numRemoved) && useDiffView) {
             return makeDiffView(
                 entryContainer,
                 `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`,
