@@ -45,7 +45,7 @@ window.addEventListener("load", async () => {
 
     const toHref = (anchor: HTMLAnchorElement): string => anchor.href;
 
-    const toList = (nodes: Array<ChildNode | Node>, ordered = false): HTMLUListElement => {
+    const toList = (nodes: Array<string | ChildNode | Node>, ordered = false): HTMLUListElement => {
         const ul = document.createElement(ordered ? "ol" : "ul");
         ul.classList.add("dupe-timeline-list");
 
