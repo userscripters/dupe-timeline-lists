@@ -55,6 +55,7 @@
 // ==/UserScript==
 
 "use strict";
+;
 window.addEventListener("load", async () => {
     const appendStyles = () => {
         const style = document.createElement("style");
@@ -109,6 +110,14 @@ window.addEventListener("load", async () => {
         const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
         return postId;
     };
+    const makeListView = (container, title, { before, after, ordered }) => {
+        container.append(toSpan(title));
+        const [beforeOrdered, afterOrdered] = ordered;
+        if (before)
+            container.append(toList(before, beforeOrdered));
+        if (after)
+            container.append(toList(after, afterOrdered));
+    };
     const processEntry = async (entryContainer, type, revisionNum) => {
         var _a;
         const commentContainer = entryContainer.querySelector("span");
@@ -136,10 +145,16 @@ window.addEventListener("load", async () => {
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
         if (numAdded) {
-            entryContainer.append(toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`), toList(addedLinks, alwaysUseLists || numAdded > 1));
+            makeListView(entryContainer, `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`, {
+                before: addedLinks,
+                ordered: [alwaysUseLists || numAdded > 1]
+            });
         }
         if (numRemoved) {
-            entryContainer.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toList(removedLinks, alwaysUseLists || numRemoved > 1));
+            makeListView(entryContainer, `Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`, {
+                before: removedLinks,
+                ordered: [alwaysUseLists || numRemoved > 1]
+            });
         }
         if (!numAdded && !numRemoved && revisionNum) {
             const postId = getPostId();
@@ -165,13 +180,13 @@ window.addEventListener("load", async () => {
             };
             const before = fromIds.map(idToAnchor);
             const after = toIds.map(idToAnchor);
-            entryContainer.append(toSpan("Reodered duplicate targets"), toList(before, true), toList(after, true));
+            makeListView(entryContainer, "Reodered duplicate targets", { before, after, ordered: [true, true] });
             return;
         }
         if (!numAdded && !numRemoved) {
             const before = from.map((url) => toAnchor(url, anchorTitles[url]));
             const after = to.map((url) => toAnchor(url, anchorTitles[url]));
-            entryContainer.append(toSpan("Reodered duplicate targets"), toList(before, true), toList(after, true));
+            makeListView(entryContainer, "Reodered duplicate targets", { before, after, ordered: [true, true] });
         }
     };
     const scriptName = "dupe-timeline-lists";

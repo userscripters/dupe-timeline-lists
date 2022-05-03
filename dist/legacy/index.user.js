@@ -116,8 +116,9 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
+;
 window.addEventListener("load", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, key, alwaysUseLists, revisionsTable, timelineTable, revisionActions;
+    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeListView, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, key, alwaysUseLists, revisionsTable, timelineTable, revisionActions;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -178,6 +179,15 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     var _a = __read(/posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [], 2), postId = _a[1];
                     return postId;
                 };
+                makeListView = function (container, title, _a) {
+                    var before = _a.before, after = _a.after, ordered = _a.ordered;
+                    container.append(toSpan(title));
+                    var _b = __read(ordered, 2), beforeOrdered = _b[0], afterOrdered = _b[1];
+                    if (before)
+                        container.append(toList(before, beforeOrdered));
+                    if (after)
+                        container.append(toList(after, afterOrdered));
+                };
                 processEntry = function (entryContainer, type, revisionNum) { return __awaiter(void 0, void 0, void 0, function () {
                     var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, before_1, after_1, before_2, after_2;
                     var _c;
@@ -213,10 +223,16 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                 numAdded = addedLinks.length;
                                 numRemoved = removedLinks.length;
                                 if (numAdded) {
-                                    entryContainer.append(toSpan("Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target"))), toList(addedLinks, alwaysUseLists || numAdded > 1));
+                                    makeListView(entryContainer, "Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target")), {
+                                        before: addedLinks,
+                                        ordered: [alwaysUseLists || numAdded > 1]
+                                    });
                                 }
                                 if (numRemoved) {
-                                    entryContainer.append(toSpan("Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target"))), toList(removedLinks, alwaysUseLists || numRemoved > 1));
+                                    makeListView(entryContainer, "Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target")), {
+                                        before: removedLinks,
+                                        ordered: [alwaysUseLists || numRemoved > 1]
+                                    });
                                 }
                                 if (!(!numAdded && !numRemoved && revisionNum)) return [3, 3];
                                 postId = getPostId();
@@ -246,13 +262,13 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                 };
                                 before_1 = fromIds.map(idToAnchor);
                                 after_1 = toIds.map(idToAnchor);
-                                entryContainer.append(toSpan("Reodered duplicate targets"), toList(before_1, true), toList(after_1, true));
+                                makeListView(entryContainer, "Reodered duplicate targets", { before: before_1, after: after_1, ordered: [true, true] });
                                 return [2];
                             case 3:
                                 if (!numAdded && !numRemoved) {
                                     before_2 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
                                     after_2 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                    entryContainer.append(toSpan("Reodered duplicate targets"), toList(before_2, true), toList(after_2, true));
+                                    makeListView(entryContainer, "Reodered duplicate targets", { before: before_2, after: after_2, ordered: [true, true] });
                                 }
                                 return [2];
                         }

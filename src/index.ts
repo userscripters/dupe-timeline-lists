@@ -134,16 +134,24 @@ window.addEventListener("load", async () => {
         const { length: numRemoved } = removedLinks;
 
         if (numAdded) {
-            entryContainer.append(
-                toSpan(`Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`),
-                toList(addedLinks, alwaysUseLists || numAdded > 1)
+            makeListView(
+                entryContainer,
+                `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`,
+                {
+                    before: addedLinks,
+                    ordered: [alwaysUseLists || numAdded > 1]
+                }
             );
         }
 
         if (numRemoved) {
-            entryContainer.append(
-                toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`),
-                toList(removedLinks, alwaysUseLists || numRemoved > 1)
+            makeListView(
+                entryContainer,
+                `Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`,
+                {
+                    before: removedLinks,
+                    ordered: [alwaysUseLists || numRemoved > 1]
+                }
             );
         }
 
@@ -178,12 +186,11 @@ window.addEventListener("load", async () => {
             const before = fromIds.map(idToAnchor);
             const after = toIds.map(idToAnchor);
 
-            entryContainer.append(
-                toSpan("Reodered duplicate targets"),
-                toList(before, true),
-                toList(after, true)
+            makeListView(
+                entryContainer,
+                "Reodered duplicate targets",
+                { before, after, ordered: [true, true] }
             );
-
             return;
         }
 
@@ -191,10 +198,10 @@ window.addEventListener("load", async () => {
             const before = from.map((url) => toAnchor(url, anchorTitles[url]));
             const after = to.map((url) => toAnchor(url, anchorTitles[url]));
 
-            entryContainer.append(
-                toSpan("Reodered duplicate targets"),
-                toList(before, true),
-                toList(after, true)
+            makeListView(
+                entryContainer,
+                "Reodered duplicate targets",
+                { before, after, ordered: [true, true] }
             );
         }
     };
