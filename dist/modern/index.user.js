@@ -125,10 +125,10 @@ window.addEventListener("load", async () => {
         const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
         return postId;
     };
-    const makeReorderDiffView = (container, title, { from, to, titles }) => {
+    const makeReorderDiffView = (container, title, { before = [], after = [], titles }) => {
         container.append(toSpan(title));
-        const diff = from.flatMap((url, idx) => {
-            const newUrl = to[idx];
+        const diff = before.flatMap((url, idx) => {
+            const newUrl = after[idx];
             if (url === newUrl)
                 return toAnchor(url, titles[url]);
             return [
@@ -138,11 +138,11 @@ window.addEventListener("load", async () => {
         });
         container.append(toList(diff));
     };
-    const makeDiffView = (container, title, { from, to, titles }) => {
+    const makeDiffView = (container, title, { before = [], after = [], titles }) => {
         container.append(toSpan(title));
-        const diff = from.map((url) => toAnchor(url, titles[url], ...(to.includes(url) ? [] : ["diff-removed"])));
-        to.forEach((url, idx, self) => {
-            if (from.includes(url))
+        const diff = before.map((url) => toAnchor(url, titles[url], ...(after.includes(url) ? [] : ["diff-removed"])));
+        after.forEach((url, idx, self) => {
+            if (before.includes(url))
                 return;
             const nextUrl = self[idx + 1];
             const insertAtIndex = diff.findIndex((a) => a.href === nextUrl) + 1;
@@ -150,13 +150,17 @@ window.addEventListener("load", async () => {
         });
         container.append(toList(diff));
     };
-    const makeListView = (container, title, { before, after, ordered }) => {
+    const makeListView = (container, title, { before, after, ordered, titles }) => {
         container.append(toSpan(title));
         const [beforeOrdered, afterOrdered] = ordered;
-        if (before)
-            container.append(toList(before, beforeOrdered));
-        if (after)
-            container.append(toList(after, afterOrdered));
+        if (before) {
+            const from = before.map((url) => toAnchor(url, titles[url]));
+            container.append(toList(from, beforeOrdered));
+        }
+        if (after) {
+            const to = after.map((url) => toAnchor(url, titles[url]));
+            container.append(toList(to, afterOrdered));
+        }
     };
     const processEntry = async (entryContainer, type, revisionNum, useDiffView = false) => {
         var _a;
@@ -175,29 +179,29 @@ window.addEventListener("load", async () => {
         const from = nodes.slice(0, fromToSeparator).filter(isAnchor).map(toHref);
         const to = nodes.slice(fromToSeparator + 1).filter(isAnchor).map(toHref);
         const { added, removed } = diffArrays(from, to);
-        const anchorTitles = {};
+        const titles = {};
         commentContainer.querySelectorAll("a").forEach(({ href, textContent }) => {
-            anchorTitles[href] = textContent || href;
+            titles[href] = textContent || href;
         });
-        const addedLinks = added.map((url) => toAnchor(url, anchorTitles[url]));
-        const removedLinks = removed.map((url) => toAnchor(url, anchorTitles[url]));
         clear(entryContainer);
-        const { length: numAdded } = addedLinks;
-        const { length: numRemoved } = removedLinks;
+        const { length: numAdded } = added;
+        const { length: numRemoved } = removed;
         if ((numAdded || numRemoved) && useDiffView) {
-            return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { from, to, titles: anchorTitles });
+            return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { before: from, after: to, titles: titles });
         }
         const reorderingTitle = "Reordered duplicate targets";
         if (numAdded) {
             makeListView(entryContainer, `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`, {
-                before: addedLinks,
-                ordered: [alwaysUseLists || numAdded > 1]
+                before: added,
+                ordered: [alwaysUseLists || numAdded > 1],
+                titles
             });
         }
         if (numRemoved) {
             makeListView(entryContainer, `Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`, {
-                before: removedLinks,
-                ordered: [alwaysUseLists || numRemoved > 1]
+                before: removed,
+                ordered: [alwaysUseLists || numRemoved > 1],
+                titles
             });
         }
         if (!numAdded && !numRemoved && revisionNum) {
@@ -217,36 +221,18 @@ window.addEventListener("load", async () => {
             const [fromStr, toStr] = diffString.split(/\s+-\s+/);
             const fromIds = fromStr.replace(/^from\s+/, "").split(",");
             const toIds = toStr.replace(/^to\s+/, "").split(",");
-            const idToAnchor = (id) => {
+            const toHref = (links, id) => {
                 const expr = new RegExp(`\\/${id}\\/`);
-                const url = from.find((url) => expr.test(url));
-                return url ? toAnchor(url, anchorTitles[url]) : id;
+                const url = links.find((url) => expr.test(url));
+                return url || id;
             };
-            const idToText = (id) => {
-                const expr = new RegExp(`\\/${id}\\/`);
-                return from.find((url) => expr.test(url)) || id;
-            };
-            if (useDiffView) {
-                return makeReorderDiffView(entryContainer, reorderingTitle, {
-                    from: fromIds.map(idToText),
-                    to: toIds.map(idToText),
-                    titles: anchorTitles
-                });
-            }
-            return makeListView(entryContainer, reorderingTitle, {
-                before: fromIds.map(idToAnchor),
-                after: toIds.map(idToAnchor),
-                ordered: [true, true]
-            });
+            const before = fromIds.map((id) => toHref(from, id));
+            const after = toIds.map((id) => toHref(to, id));
+            const handler = useDiffView ? makeReorderDiffView : makeListView;
+            return handler(entryContainer, reorderingTitle, { before, after, titles, ordered: [true, true] });
         }
-        if (!numAdded && !numRemoved && useDiffView) {
-            return makeReorderDiffView(entryContainer, reorderingTitle, { from, to, titles: anchorTitles });
-        }
-        if (!numAdded && !numRemoved) {
-            const before = from.map((url) => toAnchor(url, anchorTitles[url]));
-            const after = to.map((url) => toAnchor(url, anchorTitles[url]));
-            makeListView(entryContainer, reorderingTitle, { before, after, ordered: [true, true] });
-        }
+        const handler = useDiffView ? makeReorderDiffView : makeListView;
+        return handler(entryContainer, reorderingTitle, { before: from, after: to, titles, ordered: [true, true] });
     };
     const scriptName = "dupe-timeline-lists";
     const duplicateListEditAction = "duplicates list edited";

@@ -5,19 +5,16 @@ type TimelineEventType =
     | "history"
     | "voteaggregate";
 
-interface DiffViewConfig {
-    from: string[];
-    to: string[];
+interface ViewConfig {
+    before?: string[];
+    after?: string[];
     titles: Record<string, string>;
 }
 
-interface ListViewConfig {
-    before?: Array<string | HTMLAnchorElement>,
-    after?: Array<string | HTMLAnchorElement>;
-    ordered: [
-        before?: boolean,
-        after?: boolean
-    ];
+interface DiffViewConfig extends ViewConfig { }
+
+interface ListViewConfig extends ViewConfig {
+    ordered: [before?: boolean, after?: boolean];
 };
 
 declare const Store: typeof import("@userscripters/storage");
@@ -112,12 +109,12 @@ window.addEventListener("load", async () => {
     const makeReorderDiffView = (
         container: Element,
         title: string,
-        { from, to, titles }: DiffViewConfig
+        { before = [], after = [], titles }: DiffViewConfig
     ) => {
         container.append(toSpan(title));
 
-        const diff = from.flatMap((url, idx) => {
-            const newUrl = to[idx];
+        const diff = before.flatMap((url, idx) => {
+            const newUrl = after[idx];
 
             if (url === newUrl) return toAnchor(url, titles[url]);
 
@@ -133,14 +130,14 @@ window.addEventListener("load", async () => {
     const makeDiffView = (
         container: Element,
         title: string,
-        { from, to, titles }: DiffViewConfig
+        { before = [], after = [], titles }: DiffViewConfig
     ) => {
         container.append(toSpan(title));
 
-        const diff = from.map((url) => toAnchor(url, titles[url], ...(to.includes(url) ? [] : ["diff-removed"])));
+        const diff = before.map((url) => toAnchor(url, titles[url], ...(after.includes(url) ? [] : ["diff-removed"])));
 
-        to.forEach((url, idx, self) => {
-            if (from.includes(url)) return;
+        after.forEach((url, idx, self) => {
+            if (before.includes(url)) return;
             const nextUrl = self[idx + 1];
             const insertAtIndex = diff.findIndex((a) => a.href === nextUrl) + 1;
             diff.splice(insertAtIndex, 0, toAnchor(url, titles[url], "diff-added"));
@@ -152,12 +149,19 @@ window.addEventListener("load", async () => {
     const makeListView = (
         container: Element,
         title: string,
-        { before, after, ordered }: ListViewConfig) => {
+        { before, after, ordered, titles }: ListViewConfig) => {
         container.append(toSpan(title));
 
         const [beforeOrdered, afterOrdered] = ordered;
-        if (before) container.append(toList(before, beforeOrdered));
-        if (after) container.append(toList(after, afterOrdered));
+        if (before) {
+            const from = before.map((url) => toAnchor(url, titles[url]));
+            container.append(toList(from, beforeOrdered));
+        }
+
+        if (after) {
+            const to = after.map((url) => toAnchor(url, titles[url]));
+            container.append(toList(to, afterOrdered));
+        }
     };
 
     const processEntry = async (
@@ -186,24 +190,21 @@ window.addEventListener("load", async () => {
 
         const { added, removed } = diffArrays(from, to);
 
-        const anchorTitles: Record<string, string> = {};
+        const titles: Record<string, string> = {};
         commentContainer.querySelectorAll("a").forEach(({ href, textContent }) => {
-            anchorTitles[href] = textContent || href;
+            titles[href] = textContent || href;
         });
-
-        const addedLinks = added.map((url) => toAnchor(url, anchorTitles[url]));
-        const removedLinks = removed.map((url) => toAnchor(url, anchorTitles[url]));
 
         clear(entryContainer);
 
-        const { length: numAdded } = addedLinks;
-        const { length: numRemoved } = removedLinks;
+        const { length: numAdded } = added;
+        const { length: numRemoved } = removed;
 
         if ((numAdded || numRemoved) && useDiffView) {
             return makeDiffView(
                 entryContainer,
                 `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`,
-                { from, to, titles: anchorTitles }
+                { before: from, after: to, titles: titles }
             );
         }
 
@@ -214,8 +215,9 @@ window.addEventListener("load", async () => {
                 entryContainer,
                 `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`,
                 {
-                    before: addedLinks,
-                    ordered: [alwaysUseLists || numAdded > 1]
+                    before: added,
+                    ordered: [alwaysUseLists || numAdded > 1],
+                    titles
                 }
             );
         }
@@ -225,8 +227,9 @@ window.addEventListener("load", async () => {
                 entryContainer,
                 `Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`,
                 {
-                    before: removedLinks,
-                    ordered: [alwaysUseLists || numRemoved > 1]
+                    before: removed,
+                    ordered: [alwaysUseLists || numRemoved > 1],
+                    titles
                 }
             );
         }
@@ -253,58 +256,31 @@ window.addEventListener("load", async () => {
             const fromIds = fromStr.replace(/^from\s+/, "").split(",");
             const toIds = toStr.replace(/^to\s+/, "").split(",");
 
-            const idToAnchor = (id: string) => {
+            const toHref = (links: string[], id: string) => {
                 const expr = new RegExp(`\\/${id}\\/`);
-                const url = from.find((url) => expr.test(url));
-                return url ? toAnchor(url, anchorTitles[url]) : id;
+                const url = links.find((url) => expr.test(url));
+                return url || id;
             };
 
-            const idToText = (id: string) => {
-                const expr = new RegExp(`\\/${id}\\/`);
-                return from.find((url) => expr.test(url)) || id;
-            };
+            const before = fromIds.map((id) => toHref(from, id));
+            const after = toIds.map((id) => toHref(to, id));
 
-            if (useDiffView) {
-                return makeReorderDiffView(
-                    entryContainer,
-                    reorderingTitle,
-                    {
-                        from: fromIds.map(idToText),
-                        to: toIds.map(idToText),
-                        titles: anchorTitles
-                    }
-                );
-            }
+            const handler = useDiffView ? makeReorderDiffView : makeListView;
 
-            return makeListView(
+            return handler(
                 entryContainer,
                 reorderingTitle,
-                {
-                    before: fromIds.map(idToAnchor),
-                    after: toIds.map(idToAnchor),
-                    ordered: [true, true]
-                }
+                { before, after, titles, ordered: [true, true] }
             );
         }
 
-        if (!numAdded && !numRemoved && useDiffView) {
-            return makeReorderDiffView(
-                entryContainer,
-                reorderingTitle,
-                { from, to, titles: anchorTitles }
-            );
-        }
+        const handler = useDiffView ? makeReorderDiffView : makeListView;
 
-        if (!numAdded && !numRemoved) {
-            const before = from.map((url) => toAnchor(url, anchorTitles[url]));
-            const after = to.map((url) => toAnchor(url, anchorTitles[url]));
-
-            makeListView(
-                entryContainer,
-                reorderingTitle,
-                { before, after, ordered: [true, true] }
-            );
-        }
+        return handler(
+            entryContainer,
+            reorderingTitle,
+            { before: from, after: to, titles, ordered: [true, true] }
+        );
     };
 
     const scriptName = "dupe-timeline-lists";

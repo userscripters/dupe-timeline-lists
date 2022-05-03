@@ -190,10 +190,10 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     return postId;
                 };
                 makeReorderDiffView = function (container, title, _a) {
-                    var from = _a.from, to = _a.to, titles = _a.titles;
+                    var _b = _a.before, before = _b === void 0 ? [] : _b, _c = _a.after, after = _c === void 0 ? [] : _c, titles = _a.titles;
                     container.append(toSpan(title));
-                    var diff = from.flatMap(function (url, idx) {
-                        var newUrl = to[idx];
+                    var diff = before.flatMap(function (url, idx) {
+                        var newUrl = after[idx];
                         if (url === newUrl)
                             return toAnchor(url, titles[url]);
                         return [
@@ -204,11 +204,11 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     container.append(toList(diff));
                 };
                 makeDiffView = function (container, title, _a) {
-                    var from = _a.from, to = _a.to, titles = _a.titles;
+                    var _b = _a.before, before = _b === void 0 ? [] : _b, _c = _a.after, after = _c === void 0 ? [] : _c, titles = _a.titles;
                     container.append(toSpan(title));
-                    var diff = from.map(function (url) { return toAnchor.apply(void 0, __spreadArray([url, titles[url]], __read((to.includes(url) ? [] : ["diff-removed"])), false)); });
-                    to.forEach(function (url, idx, self) {
-                        if (from.includes(url))
+                    var diff = before.map(function (url) { return toAnchor.apply(void 0, __spreadArray([url, titles[url]], __read((after.includes(url) ? [] : ["diff-removed"])), false)); });
+                    after.forEach(function (url, idx, self) {
+                        if (before.includes(url))
                             return;
                         var nextUrl = self[idx + 1];
                         var insertAtIndex = diff.findIndex(function (a) { return a.href === nextUrl; }) + 1;
@@ -217,18 +217,22 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     container.append(toList(diff));
                 };
                 makeListView = function (container, title, _a) {
-                    var before = _a.before, after = _a.after, ordered = _a.ordered;
+                    var before = _a.before, after = _a.after, ordered = _a.ordered, titles = _a.titles;
                     container.append(toSpan(title));
                     var _b = __read(ordered, 2), beforeOrdered = _b[0], afterOrdered = _b[1];
-                    if (before)
-                        container.append(toList(before, beforeOrdered));
-                    if (after)
-                        container.append(toList(after, afterOrdered));
+                    if (before) {
+                        var from = before.map(function (url) { return toAnchor(url, titles[url]); });
+                        container.append(toList(from, beforeOrdered));
+                    }
+                    if (after) {
+                        var to = after.map(function (url) { return toAnchor(url, titles[url]); });
+                        container.append(toList(to, afterOrdered));
+                    }
                 };
                 processEntry = function (entryContainer, type, revisionNum, useDiffView) {
                     if (useDiffView === void 0) { useDiffView = false; }
                     return __awaiter(void 0, void 0, void 0, function () {
-                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, reorderingTitle, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, idToText, before_1, after_1;
+                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, titles, numAdded, numRemoved, reorderingTitle, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, toHref_1, before_1, after_1, handler_1, handler;
                         var _c;
                         return __generator(this, function (_d) {
                             switch (_d.label) {
@@ -251,30 +255,30 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                     from = nodes.slice(0, fromToSeparator).filter(isAnchor).map(toHref);
                                     to = nodes.slice(fromToSeparator + 1).filter(isAnchor).map(toHref);
                                     _a = diffArrays(from, to), added = _a.added, removed = _a.removed;
-                                    anchorTitles = {};
+                                    titles = {};
                                     commentContainer.querySelectorAll("a").forEach(function (_a) {
                                         var href = _a.href, textContent = _a.textContent;
-                                        anchorTitles[href] = textContent || href;
+                                        titles[href] = textContent || href;
                                     });
-                                    addedLinks = added.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                    removedLinks = removed.map(function (url) { return toAnchor(url, anchorTitles[url]); });
                                     clear(entryContainer);
-                                    numAdded = addedLinks.length;
-                                    numRemoved = removedLinks.length;
+                                    numAdded = added.length;
+                                    numRemoved = removed.length;
                                     if ((numAdded || numRemoved) && useDiffView) {
-                                        return [2, makeDiffView(entryContainer, "Added ".concat(numAdded, ", removed ").concat(numRemoved, " ").concat(pluralise(numRemoved, "target")), { from: from, to: to, titles: anchorTitles })];
+                                        return [2, makeDiffView(entryContainer, "Added ".concat(numAdded, ", removed ").concat(numRemoved, " ").concat(pluralise(numRemoved, "target")), { before: from, after: to, titles: titles })];
                                     }
                                     reorderingTitle = "Reordered duplicate targets";
                                     if (numAdded) {
                                         makeListView(entryContainer, "Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target")), {
-                                            before: addedLinks,
-                                            ordered: [alwaysUseLists || numAdded > 1]
+                                            before: added,
+                                            ordered: [alwaysUseLists || numAdded > 1],
+                                            titles: titles
                                         });
                                     }
                                     if (numRemoved) {
                                         makeListView(entryContainer, "Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target")), {
-                                            before: removedLinks,
-                                            ordered: [alwaysUseLists || numRemoved > 1]
+                                            before: removed,
+                                            ordered: [alwaysUseLists || numRemoved > 1],
+                                            titles: titles
                                         });
                                     }
                                     if (!(!numAdded && !numRemoved && revisionNum)) return [3, 3];
@@ -298,37 +302,18 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                     _b = __read(diffString.split(/\s+-\s+/), 2), fromStr = _b[0], toStr = _b[1];
                                     fromIds = fromStr.replace(/^from\s+/, "").split(",");
                                     toIds = toStr.replace(/^to\s+/, "").split(",");
-                                    idToAnchor = function (id) {
+                                    toHref_1 = function (links, id) {
                                         var expr = new RegExp("\\/".concat(id, "\\/"));
-                                        var url = from.find(function (url) { return expr.test(url); });
-                                        return url ? toAnchor(url, anchorTitles[url]) : id;
+                                        var url = links.find(function (url) { return expr.test(url); });
+                                        return url || id;
                                     };
-                                    idToText = function (id) {
-                                        var expr = new RegExp("\\/".concat(id, "\\/"));
-                                        return from.find(function (url) { return expr.test(url); }) || id;
-                                    };
-                                    if (useDiffView) {
-                                        return [2, makeReorderDiffView(entryContainer, reorderingTitle, {
-                                                from: fromIds.map(idToText),
-                                                to: toIds.map(idToText),
-                                                titles: anchorTitles
-                                            })];
-                                    }
-                                    return [2, makeListView(entryContainer, reorderingTitle, {
-                                            before: fromIds.map(idToAnchor),
-                                            after: toIds.map(idToAnchor),
-                                            ordered: [true, true]
-                                        })];
+                                    before_1 = fromIds.map(function (id) { return toHref_1(from, id); });
+                                    after_1 = toIds.map(function (id) { return toHref_1(to, id); });
+                                    handler_1 = useDiffView ? makeReorderDiffView : makeListView;
+                                    return [2, handler_1(entryContainer, reorderingTitle, { before: before_1, after: after_1, titles: titles, ordered: [true, true] })];
                                 case 3:
-                                    if (!numAdded && !numRemoved && useDiffView) {
-                                        return [2, makeReorderDiffView(entryContainer, reorderingTitle, { from: from, to: to, titles: anchorTitles })];
-                                    }
-                                    if (!numAdded && !numRemoved) {
-                                        before_1 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                        after_1 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                        makeListView(entryContainer, reorderingTitle, { before: before_1, after: after_1, ordered: [true, true] });
-                                    }
-                                    return [2];
+                                    handler = useDiffView ? makeReorderDiffView : makeListView;
+                                    return [2, handler(entryContainer, reorderingTitle, { before: from, after: to, titles: titles, ordered: [true, true] })];
                             }
                         });
                     });
