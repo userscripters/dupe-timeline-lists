@@ -57,7 +57,7 @@
 "use strict";
 ;
 window.addEventListener("load", async () => {
-    const appendStyles = () => {
+    const appendStyles = (useDiffView, useColorDiffs) => {
         const style = document.createElement("style");
         document.head.append(style);
         const { sheet } = style;
@@ -65,13 +65,13 @@ window.addEventListener("load", async () => {
             console.debug(`[${scriptName}] missing stylesheet`);
             return;
         }
-        [
+        const rules = [
             "ul.dupe-timeline-list { list-style: none; margin-left: 0; }",
             "ol.dupe-timeline-list { margin-left: 1em; }",
             ".dupe-timeline-list:last-child { margin-bottom: 0; }",
             `.dupe-timeline-list .diff-added,
              .dupe-timeline-list .diff-removed {
-                margin-left: 1em;
+                padding-left: 1em;
             }`,
             `.dupe-timeline-list .diff-added:before,
              .dupe-timeline-list .diff-removed:before {
@@ -83,7 +83,24 @@ window.addEventListener("load", async () => {
             }`,
             ".dupe-timeline-list .diff-added:before { content: \"+\"; }",
             ".dupe-timeline-list .diff-removed:before { content: \"-\"; }"
-        ].forEach((r) => sheet.insertRule(r));
+        ];
+        if (useDiffView && useColorDiffs) {
+            rules.push(...[
+                `.dupe-timeline-list a.diff-added,
+                 .dupe-timeline-list a.diff-removed {
+                    text-decoration: underline var(--theme-link-color);
+                }`,
+                `.dupe-timeline-list .diff-added {
+                    background: var(--green-100);
+                    color: var(--green-800);
+                }`,
+                `.dupe-timeline-list .diff-removed {
+                    color: var(--red-800);
+                    background-color: var(--red-200);
+                }`
+            ]);
+        }
+        rules.forEach((r) => sheet.insertRule(r));
     };
     const clear = (node) => [...node.children].forEach((child) => child.remove());
     const isAnchor = (node) => node.nodeName.toUpperCase() === "A";
@@ -237,15 +254,18 @@ window.addEventListener("load", async () => {
     const scriptName = "dupe-timeline-lists";
     const duplicateListEditAction = "duplicates list edited";
     const fromToSeparatorText = " to ";
-    appendStyles();
     const storage = Store.locateStorage();
     const store = new Store.default(scriptName, storage);
     const useListsKey = "always-use-lists";
     const useDiffKey = "use-diff-view";
+    const useColorDiffsKey = "use-color-diffs";
     const alwaysUseLists = await store.load(useListsKey, false);
     const useDiffView = await store.load(useDiffKey, false);
+    const useColorDiffs = await store.load(useColorDiffsKey, false);
     await store.save(useListsKey, alwaysUseLists);
     await store.save(useDiffKey, useDiffView);
+    await store.save(useColorDiffsKey, useColorDiffs);
+    appendStyles(useDiffView, useColorDiffs);
     if (location.pathname.includes("revisions")) {
         const revisionsTable = document.querySelector(".js-revisions");
         if (!revisionsTable) {
