@@ -126,6 +126,57 @@ window.addEventListener("load", async () => {
                 toList(removedLinks, alwaysUseLists || numRemoved > 1)
             );
         }
+
+        if (!numAdded && !numRemoved && revisionNum) {
+            const postId = getPostId();
+
+            if (!postId) return;
+
+            const res = await fetch(`/revisions/${postId}/${revisionNum}`);
+            if (!res.ok) return;
+
+            const page = await res.text();
+
+            const diffNode = $(page)
+                .find(`[title='revision ${revisionNum}']`)
+                .next()
+                .contents()
+                .get(0);
+
+            const diffString = diffNode?.textContent?.trim() || "";
+            const [fromStr, toStr] = diffString.split(/\s+-\s+/);
+
+            const fromIds = fromStr.replace(/^from\s+/, "").split(",");
+            const toIds = toStr.replace(/^to\s+/, "").split(",");
+
+            const idToAnchor = (id: string) => {
+                const expr = new RegExp(`\\/${id}\\/`);
+                const url = from.find((url) => expr.test(url));
+                return url ? toAnchor(url, anchorTitles[url]) : id;
+            };
+
+            const before = fromIds.map(idToAnchor);
+            const after = toIds.map(idToAnchor);
+
+            entryContainer.append(
+                toSpan("Reodered duplicate targets"),
+                toList(before, true),
+                toList(after, true)
+            );
+
+            return;
+        }
+
+        if (!numAdded && !numRemoved) {
+            const before = from.map((url) => toAnchor(url, anchorTitles[url]));
+            const after = to.map((url) => toAnchor(url, anchorTitles[url]));
+
+            entryContainer.append(
+                toSpan("Reodered duplicate targets"),
+                toList(before, true),
+                toList(after, true)
+            );
+        }
     };
 
     const scriptName = "dupe-timeline-lists";

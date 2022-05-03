@@ -104,7 +104,13 @@ window.addEventListener("load", async () => {
         return result;
     };
     const pluralise = (num, singular, suffix = "s") => `${singular}${num === 1 ? "" : suffix}`;
-    const processEntry = (entryContainer, type) => {
+    const getPostId = () => {
+        const { pathname } = location;
+        const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
+        return postId;
+    };
+    const processEntry = async (entryContainer, type, revisionNum) => {
+        var _a;
         const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
             console.debug(`[${scriptName}] missing duplicate list edit ${type} entry container`);
@@ -135,6 +141,38 @@ window.addEventListener("load", async () => {
         if (numRemoved) {
             entryContainer.append(toSpan(`Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`), toList(removedLinks, alwaysUseLists || numRemoved > 1));
         }
+        if (!numAdded && !numRemoved && revisionNum) {
+            const postId = getPostId();
+            if (!postId)
+                return;
+            const res = await fetch(`/revisions/${postId}/${revisionNum}`);
+            if (!res.ok)
+                return;
+            const page = await res.text();
+            const diffNode = $(page)
+                .find(`[title='revision ${revisionNum}']`)
+                .next()
+                .contents()
+                .get(0);
+            const diffString = ((_a = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+            const [fromStr, toStr] = diffString.split(/\s+-\s+/);
+            const fromIds = fromStr.replace(/^from\s+/, "").split(",");
+            const toIds = toStr.replace(/^to\s+/, "").split(",");
+            const idToAnchor = (id) => {
+                const expr = new RegExp(`\\/${id}\\/`);
+                const url = from.find((url) => expr.test(url));
+                return url ? toAnchor(url, anchorTitles[url]) : id;
+            };
+            const before = fromIds.map(idToAnchor);
+            const after = toIds.map(idToAnchor);
+            entryContainer.append(toSpan("Reodered duplicate targets"), toList(before, true), toList(after, true));
+            return;
+        }
+        if (!numAdded && !numRemoved) {
+            const before = from.map((url) => toAnchor(url, anchorTitles[url]));
+            const after = to.map((url) => toAnchor(url, anchorTitles[url]));
+            entryContainer.append(toSpan("Reodered duplicate targets"), toList(before, true), toList(after, true));
+        }
     };
     const scriptName = "dupe-timeline-lists";
     const duplicateListEditAction = "duplicates list edited";
@@ -152,12 +190,15 @@ window.addEventListener("load", async () => {
             return;
         }
         revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
-            var _a;
-            const [_numCell, commentCell, _authorCell] = row.children;
+            var _a, _b;
+            const [numCell, commentCell, _authorCell] = row.children;
             const comment = ((_a = commentCell === null || commentCell === void 0 ? void 0 : commentCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
             if (!comment.includes("duplicates list edited"))
                 return;
-            processEntry(commentCell, "revisions");
+            const revisionNum = ((_b = numCell === null || numCell === void 0 ? void 0 : numCell.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+            if (!revisionNum || Number.isNaN(+revisionNum))
+                return;
+            processEntry(commentCell, "revisions", revisionNum);
         });
         return;
     }
@@ -166,6 +207,7 @@ window.addEventListener("load", async () => {
         console.debug(`[${scriptName}] missing timeline table`);
         return;
     }
+    const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
     timelineTable.querySelectorAll("tr").forEach((row) => {
         var _a;
         const { dataset } = row;
@@ -177,6 +219,17 @@ window.addEventListener("load", async () => {
         const action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
         if (action !== duplicateListEditAction)
             return;
-        processEntry(commentCell, "timeline");
+        const revisionNum = [...timelineTable.rows].reduce((a, c) => {
+            var _a, _b;
+            const [_dc, tc, ac] = c.cells;
+            const type = ((_a = tc === null || tc === void 0 ? void 0 : tc.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+            if (type !== "history")
+                return a;
+            const action = ((_b = ac === null || ac === void 0 ? void 0 : ac.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+            if (!revisionActions.has(action))
+                return a;
+            return a + 1;
+        }, 0);
+        processEntry(commentCell, "timeline", revisionNum);
     });
 }, { once: true });

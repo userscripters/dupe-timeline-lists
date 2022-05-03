@@ -117,7 +117,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 window.addEventListener("load", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, key, alwaysUseLists, revisionsTable, timelineTable;
+    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, key, alwaysUseLists, revisionsTable, timelineTable, revisionActions;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -173,42 +173,91 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     if (suffix === void 0) { suffix = "s"; }
                     return "".concat(singular).concat(num === 1 ? "" : suffix);
                 };
-                processEntry = function (entryContainer, type) {
-                    var commentContainer = entryContainer.querySelector("span");
-                    if (!commentContainer) {
-                        console.debug("[".concat(scriptName, "] missing duplicate list edit ").concat(type, " entry container"));
-                        return;
-                    }
-                    var childNodes = commentContainer.childNodes;
-                    var nodes = __spreadArray([], __read(childNodes), false);
-                    var fromToSeparator = nodes.findIndex(function (_a) {
-                        var textContent = _a.textContent;
-                        return textContent === fromToSeparatorText;
-                    });
-                    if (fromToSeparator === -1) {
-                        console.debug("[".concat(scriptName, "] missing from/to separator text"));
-                        return;
-                    }
-                    var from = nodes.slice(0, fromToSeparator).filter(isAnchor).map(toHref);
-                    var to = nodes.slice(fromToSeparator + 1).filter(isAnchor).map(toHref);
-                    var _a = diffArrays(from, to), added = _a.added, removed = _a.removed;
-                    var anchorTitles = {};
-                    commentContainer.querySelectorAll("a").forEach(function (_a) {
-                        var href = _a.href, textContent = _a.textContent;
-                        anchorTitles[href] = textContent || href;
-                    });
-                    var addedLinks = added.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                    var removedLinks = removed.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                    clear(entryContainer);
-                    var numAdded = addedLinks.length;
-                    var numRemoved = removedLinks.length;
-                    if (numAdded) {
-                        entryContainer.append(toSpan("Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target"))), toList(addedLinks, alwaysUseLists || numAdded > 1));
-                    }
-                    if (numRemoved) {
-                        entryContainer.append(toSpan("Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target"))), toList(removedLinks, alwaysUseLists || numRemoved > 1));
-                    }
+                getPostId = function () {
+                    var pathname = location.pathname;
+                    var _a = __read(/posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [], 2), postId = _a[1];
+                    return postId;
                 };
+                processEntry = function (entryContainer, type, revisionNum) { return __awaiter(void 0, void 0, void 0, function () {
+                    var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, before_1, after_1, before_2, after_2;
+                    var _c;
+                    return __generator(this, function (_d) {
+                        switch (_d.label) {
+                            case 0:
+                                commentContainer = entryContainer.querySelector("span");
+                                if (!commentContainer) {
+                                    console.debug("[".concat(scriptName, "] missing duplicate list edit ").concat(type, " entry container"));
+                                    return [2];
+                                }
+                                childNodes = commentContainer.childNodes;
+                                nodes = __spreadArray([], __read(childNodes), false);
+                                fromToSeparator = nodes.findIndex(function (_a) {
+                                    var textContent = _a.textContent;
+                                    return textContent === fromToSeparatorText;
+                                });
+                                if (fromToSeparator === -1) {
+                                    console.debug("[".concat(scriptName, "] missing from/to separator text"));
+                                    return [2];
+                                }
+                                from = nodes.slice(0, fromToSeparator).filter(isAnchor).map(toHref);
+                                to = nodes.slice(fromToSeparator + 1).filter(isAnchor).map(toHref);
+                                _a = diffArrays(from, to), added = _a.added, removed = _a.removed;
+                                anchorTitles = {};
+                                commentContainer.querySelectorAll("a").forEach(function (_a) {
+                                    var href = _a.href, textContent = _a.textContent;
+                                    anchorTitles[href] = textContent || href;
+                                });
+                                addedLinks = added.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                removedLinks = removed.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                clear(entryContainer);
+                                numAdded = addedLinks.length;
+                                numRemoved = removedLinks.length;
+                                if (numAdded) {
+                                    entryContainer.append(toSpan("Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target"))), toList(addedLinks, alwaysUseLists || numAdded > 1));
+                                }
+                                if (numRemoved) {
+                                    entryContainer.append(toSpan("Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target"))), toList(removedLinks, alwaysUseLists || numRemoved > 1));
+                                }
+                                if (!(!numAdded && !numRemoved && revisionNum)) return [3, 3];
+                                postId = getPostId();
+                                if (!postId)
+                                    return [2];
+                                return [4, fetch("/revisions/".concat(postId, "/").concat(revisionNum))];
+                            case 1:
+                                res = _d.sent();
+                                if (!res.ok)
+                                    return [2];
+                                return [4, res.text()];
+                            case 2:
+                                page = _d.sent();
+                                diffNode = $(page)
+                                    .find("[title='revision ".concat(revisionNum, "']"))
+                                    .next()
+                                    .contents()
+                                    .get(0);
+                                diffString = ((_c = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || "";
+                                _b = __read(diffString.split(/\s+-\s+/), 2), fromStr = _b[0], toStr = _b[1];
+                                fromIds = fromStr.replace(/^from\s+/, "").split(",");
+                                toIds = toStr.replace(/^to\s+/, "").split(",");
+                                idToAnchor = function (id) {
+                                    var expr = new RegExp("\\/".concat(id, "\\/"));
+                                    var url = from.find(function (url) { return expr.test(url); });
+                                    return url ? toAnchor(url, anchorTitles[url]) : id;
+                                };
+                                before_1 = fromIds.map(idToAnchor);
+                                after_1 = toIds.map(idToAnchor);
+                                entryContainer.append(toSpan("Reodered duplicate targets"), toList(before_1, true), toList(after_1, true));
+                                return [2];
+                            case 3:
+                                if (!numAdded && !numRemoved) {
+                                    before_2 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                    after_2 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                    entryContainer.append(toSpan("Reodered duplicate targets"), toList(before_2, true), toList(after_2, true));
+                                }
+                                return [2];
+                        }
+                    });
+                }); };
                 scriptName = "dupe-timeline-lists";
                 duplicateListEditAction = "duplicates list edited";
                 fromToSeparatorText = " to ";
@@ -229,12 +278,15 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                         return [2];
                     }
                     revisionsTable.querySelectorAll(".js-revision > div").forEach(function (row) {
-                        var _a;
-                        var _b = __read(row.children, 3), _numCell = _b[0], commentCell = _b[1], _authorCell = _b[2];
+                        var _a, _b;
+                        var _c = __read(row.children, 3), numCell = _c[0], commentCell = _c[1], _authorCell = _c[2];
                         var comment = ((_a = commentCell === null || commentCell === void 0 ? void 0 : commentCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
                         if (!comment.includes("duplicates list edited"))
                             return;
-                        processEntry(commentCell, "revisions");
+                        var revisionNum = ((_b = numCell === null || numCell === void 0 ? void 0 : numCell.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+                        if (!revisionNum || Number.isNaN(+revisionNum))
+                            return;
+                        processEntry(commentCell, "revisions", revisionNum);
                     });
                     return [2];
                 }
@@ -243,6 +295,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     console.debug("[".concat(scriptName, "] missing timeline table"));
                     return [2];
                 }
+                revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
                 timelineTable.querySelectorAll("tr").forEach(function (row) {
                     var _a;
                     var dataset = row.dataset;
@@ -254,7 +307,18 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     var action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
                     if (action !== duplicateListEditAction)
                         return;
-                    processEntry(commentCell, "timeline");
+                    var revisionNum = __spreadArray([], __read(timelineTable.rows), false).reduce(function (a, c) {
+                        var _a, _b;
+                        var _c = __read(c.cells, 3), _dc = _c[0], tc = _c[1], ac = _c[2];
+                        var type = ((_a = tc === null || tc === void 0 ? void 0 : tc.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+                        if (type !== "history")
+                            return a;
+                        var action = ((_b = ac === null || ac === void 0 ? void 0 : ac.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+                        if (!revisionActions.has(action))
+                            return a;
+                        return a + 1;
+                    }, 0);
+                    processEntry(commentCell, "timeline", revisionNum);
                 });
                 return [2];
         }
