@@ -118,7 +118,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 ;
 window.addEventListener("load", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeDiffView, makeListView, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, alwaysUseLists, useDiffView, revisionsTable, timelineTable, revisionActions;
+    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeReorderDiffView, makeDiffView, makeListView, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, alwaysUseLists, useDiffView, revisionsTable, timelineTable, revisionActions;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -189,6 +189,20 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     var _a = __read(/posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [], 2), postId = _a[1];
                     return postId;
                 };
+                makeReorderDiffView = function (container, title, _a) {
+                    var from = _a.from, to = _a.to, titles = _a.titles;
+                    container.append(toSpan(title));
+                    var diff = from.flatMap(function (url, idx) {
+                        var newUrl = to[idx];
+                        if (url === newUrl)
+                            return toAnchor(url, titles[url]);
+                        return [
+                            toAnchor(url, titles[url], "diff-removed"),
+                            toAnchor(newUrl, titles[newUrl], "diff-added")
+                        ];
+                    });
+                    container.append(toList(diff));
+                };
                 makeDiffView = function (container, title, _a) {
                     var from = _a.from, to = _a.to, titles = _a.titles;
                     container.append(toSpan(title));
@@ -214,7 +228,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                 processEntry = function (entryContainer, type, revisionNum, useDiffView) {
                     if (useDiffView === void 0) { useDiffView = false; }
                     return __awaiter(void 0, void 0, void 0, function () {
-                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, before_1, after_1, before_2, after_2;
+                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, idToText, before_1, after_1;
                         var _c;
                         return __generator(this, function (_d) {
                             switch (_d.label) {
@@ -247,7 +261,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                     clear(entryContainer);
                                     numAdded = addedLinks.length;
                                     numRemoved = removedLinks.length;
-                                    if (numAdded || numRemoved && useDiffView) {
+                                    if ((numAdded || numRemoved) && useDiffView) {
                                         return [2, makeDiffView(entryContainer, "Added ".concat(numAdded, ", removed ").concat(numRemoved, " ").concat(pluralise(numRemoved, "target")), { from: from, to: to, titles: anchorTitles })];
                                     }
                                     if (numAdded) {
@@ -288,15 +302,30 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                         var url = from.find(function (url) { return expr.test(url); });
                                         return url ? toAnchor(url, anchorTitles[url]) : id;
                                     };
-                                    before_1 = fromIds.map(idToAnchor);
-                                    after_1 = toIds.map(idToAnchor);
-                                    makeListView(entryContainer, "Reodered duplicate targets", { before: before_1, after: after_1, ordered: [true, true] });
-                                    return [2];
+                                    idToText = function (id) {
+                                        var expr = new RegExp("\\/".concat(id, "\\/"));
+                                        return from.find(function (url) { return expr.test(url); }) || id;
+                                    };
+                                    if (useDiffView) {
+                                        return [2, makeReorderDiffView(entryContainer, "Reordered duplicate targets", {
+                                                from: fromIds.map(idToText),
+                                                to: toIds.map(idToText),
+                                                titles: anchorTitles
+                                            })];
+                                    }
+                                    return [2, makeListView(entryContainer, "Reordered duplicate targets", {
+                                            before: fromIds.map(idToAnchor),
+                                            after: toIds.map(idToAnchor),
+                                            ordered: [true, true]
+                                        })];
                                 case 3:
+                                    if (!numAdded && !numRemoved && useDiffView) {
+                                        return [2, makeReorderDiffView(entryContainer, "Reordered duplicate targets", { from: from, to: to, titles: anchorTitles })];
+                                    }
                                     if (!numAdded && !numRemoved) {
-                                        before_2 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                        after_2 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                        makeListView(entryContainer, "Reodered duplicate targets", { before: before_2, after: after_2, ordered: [true, true] });
+                                        before_1 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                        after_1 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                        makeListView(entryContainer, "Reordered duplicate targets", { before: before_1, after: after_1, ordered: [true, true] });
                                     }
                                     return [2];
                             }

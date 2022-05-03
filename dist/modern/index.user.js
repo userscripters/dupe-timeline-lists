@@ -125,6 +125,19 @@ window.addEventListener("load", async () => {
         const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
         return postId;
     };
+    const makeReorderDiffView = (container, title, { from, to, titles }) => {
+        container.append(toSpan(title));
+        const diff = from.flatMap((url, idx) => {
+            const newUrl = to[idx];
+            if (url === newUrl)
+                return toAnchor(url, titles[url]);
+            return [
+                toAnchor(url, titles[url], "diff-removed"),
+                toAnchor(newUrl, titles[newUrl], "diff-added")
+            ];
+        });
+        container.append(toList(diff));
+    };
     const makeDiffView = (container, title, { from, to, titles }) => {
         container.append(toSpan(title));
         const diff = from.map((url) => toAnchor(url, titles[url], ...(to.includes(url) ? [] : ["diff-removed"])));
@@ -171,7 +184,7 @@ window.addEventListener("load", async () => {
         clear(entryContainer);
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
-        if (numAdded || numRemoved && useDiffView) {
+        if ((numAdded || numRemoved) && useDiffView) {
             return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { from, to, titles: anchorTitles });
         }
         if (numAdded) {
@@ -208,15 +221,30 @@ window.addEventListener("load", async () => {
                 const url = from.find((url) => expr.test(url));
                 return url ? toAnchor(url, anchorTitles[url]) : id;
             };
-            const before = fromIds.map(idToAnchor);
-            const after = toIds.map(idToAnchor);
-            makeListView(entryContainer, "Reodered duplicate targets", { before, after, ordered: [true, true] });
-            return;
+            const idToText = (id) => {
+                const expr = new RegExp(`\\/${id}\\/`);
+                return from.find((url) => expr.test(url)) || id;
+            };
+            if (useDiffView) {
+                return makeReorderDiffView(entryContainer, "Reordered duplicate targets", {
+                    from: fromIds.map(idToText),
+                    to: toIds.map(idToText),
+                    titles: anchorTitles
+                });
+            }
+            return makeListView(entryContainer, "Reordered duplicate targets", {
+                before: fromIds.map(idToAnchor),
+                after: toIds.map(idToAnchor),
+                ordered: [true, true]
+            });
+        }
+        if (!numAdded && !numRemoved && useDiffView) {
+            return makeReorderDiffView(entryContainer, "Reordered duplicate targets", { from, to, titles: anchorTitles });
         }
         if (!numAdded && !numRemoved) {
             const before = from.map((url) => toAnchor(url, anchorTitles[url]));
             const after = to.map((url) => toAnchor(url, anchorTitles[url]));
-            makeListView(entryContainer, "Reodered duplicate targets", { before, after, ordered: [true, true] });
+            makeListView(entryContainer, "Reordered duplicate targets", { before, after, ordered: [true, true] });
         }
     };
     const scriptName = "dupe-timeline-lists";
