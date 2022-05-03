@@ -257,15 +257,40 @@ window.addEventListener("load", async () => {
                 return url ? toAnchor(url, anchorTitles[url]) : id;
             };
 
-            const before = fromIds.map(idToAnchor);
-            const after = toIds.map(idToAnchor);
+            const idToText = (id: string) => {
+                const expr = new RegExp(`\\/${id}\\/`);
+                return from.find((url) => expr.test(url)) || id;
+            };
 
-            makeListView(
+            if (useDiffView) {
+                return makeReorderDiffView(
+                    entryContainer,
+                    "Reodered duplicate targets",
+                    {
+                        from: fromIds.map(idToText),
+                        to: toIds.map(idToText),
+                        titles: anchorTitles
+                    }
+                );
+            }
+
+            return makeListView(
                 entryContainer,
                 "Reodered duplicate targets",
-                { before, after, ordered: [true, true] }
+                {
+                    before: fromIds.map(idToAnchor),
+                    after: toIds.map(idToAnchor),
+                    ordered: [true, true]
+                }
             );
-            return;
+        }
+
+        if (!numAdded && !numRemoved && useDiffView) {
+            return makeReorderDiffView(
+                entryContainer,
+                "Reodered duplicate targets",
+                { from, to, titles: anchorTitles }
+            );
         }
 
         if (!numAdded && !numRemoved) {
