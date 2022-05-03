@@ -207,6 +207,8 @@ window.addEventListener("load", async () => {
             );
         }
 
+        const reorderingTitle = "Reordered duplicate targets";
+
         if (numAdded) {
             makeListView(
                 entryContainer,
@@ -265,7 +267,7 @@ window.addEventListener("load", async () => {
             if (useDiffView) {
                 return makeReorderDiffView(
                     entryContainer,
-                    "Reordered duplicate targets",
+                    reorderingTitle,
                     {
                         from: fromIds.map(idToText),
                         to: toIds.map(idToText),
@@ -276,7 +278,7 @@ window.addEventListener("load", async () => {
 
             return makeListView(
                 entryContainer,
-                "Reordered duplicate targets",
+                reorderingTitle,
                 {
                     before: fromIds.map(idToAnchor),
                     after: toIds.map(idToAnchor),
@@ -288,7 +290,7 @@ window.addEventListener("load", async () => {
         if (!numAdded && !numRemoved && useDiffView) {
             return makeReorderDiffView(
                 entryContainer,
-                "Reordered duplicate targets",
+                reorderingTitle,
                 { from, to, titles: anchorTitles }
             );
         }
@@ -299,7 +301,7 @@ window.addEventListener("load", async () => {
 
             makeListView(
                 entryContainer,
-                "Reordered duplicate targets",
+                reorderingTitle,
                 { before, after, ordered: [true, true] }
             );
         }

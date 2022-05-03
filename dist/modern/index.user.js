@@ -187,6 +187,7 @@ window.addEventListener("load", async () => {
         if ((numAdded || numRemoved) && useDiffView) {
             return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { from, to, titles: anchorTitles });
         }
+        const reorderingTitle = "Reordered duplicate targets";
         if (numAdded) {
             makeListView(entryContainer, `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`, {
                 before: addedLinks,
@@ -226,25 +227,25 @@ window.addEventListener("load", async () => {
                 return from.find((url) => expr.test(url)) || id;
             };
             if (useDiffView) {
-                return makeReorderDiffView(entryContainer, "Reordered duplicate targets", {
+                return makeReorderDiffView(entryContainer, reorderingTitle, {
                     from: fromIds.map(idToText),
                     to: toIds.map(idToText),
                     titles: anchorTitles
                 });
             }
-            return makeListView(entryContainer, "Reordered duplicate targets", {
+            return makeListView(entryContainer, reorderingTitle, {
                 before: fromIds.map(idToAnchor),
                 after: toIds.map(idToAnchor),
                 ordered: [true, true]
             });
         }
         if (!numAdded && !numRemoved && useDiffView) {
-            return makeReorderDiffView(entryContainer, "Reordered duplicate targets", { from, to, titles: anchorTitles });
+            return makeReorderDiffView(entryContainer, reorderingTitle, { from, to, titles: anchorTitles });
         }
         if (!numAdded && !numRemoved) {
             const before = from.map((url) => toAnchor(url, anchorTitles[url]));
             const after = to.map((url) => toAnchor(url, anchorTitles[url]));
-            makeListView(entryContainer, "Reordered duplicate targets", { before, after, ordered: [true, true] });
+            makeListView(entryContainer, reorderingTitle, { before, after, ordered: [true, true] });
         }
     };
     const scriptName = "dupe-timeline-lists";

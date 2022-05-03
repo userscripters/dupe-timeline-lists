@@ -228,7 +228,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                 processEntry = function (entryContainer, type, revisionNum, useDiffView) {
                     if (useDiffView === void 0) { useDiffView = false; }
                     return __awaiter(void 0, void 0, void 0, function () {
-                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, idToText, before_1, after_1;
+                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, reorderingTitle, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, idToText, before_1, after_1;
                         var _c;
                         return __generator(this, function (_d) {
                             switch (_d.label) {
@@ -264,6 +264,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                     if ((numAdded || numRemoved) && useDiffView) {
                                         return [2, makeDiffView(entryContainer, "Added ".concat(numAdded, ", removed ").concat(numRemoved, " ").concat(pluralise(numRemoved, "target")), { from: from, to: to, titles: anchorTitles })];
                                     }
+                                    reorderingTitle = "Reordered duplicate targets";
                                     if (numAdded) {
                                         makeListView(entryContainer, "Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target")), {
                                             before: addedLinks,
@@ -307,25 +308,25 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                         return from.find(function (url) { return expr.test(url); }) || id;
                                     };
                                     if (useDiffView) {
-                                        return [2, makeReorderDiffView(entryContainer, "Reordered duplicate targets", {
+                                        return [2, makeReorderDiffView(entryContainer, reorderingTitle, {
                                                 from: fromIds.map(idToText),
                                                 to: toIds.map(idToText),
                                                 titles: anchorTitles
                                             })];
                                     }
-                                    return [2, makeListView(entryContainer, "Reordered duplicate targets", {
+                                    return [2, makeListView(entryContainer, reorderingTitle, {
                                             before: fromIds.map(idToAnchor),
                                             after: toIds.map(idToAnchor),
                                             ordered: [true, true]
                                         })];
                                 case 3:
                                     if (!numAdded && !numRemoved && useDiffView) {
-                                        return [2, makeReorderDiffView(entryContainer, "Reordered duplicate targets", { from: from, to: to, titles: anchorTitles })];
+                                        return [2, makeReorderDiffView(entryContainer, reorderingTitle, { from: from, to: to, titles: anchorTitles })];
                                     }
                                     if (!numAdded && !numRemoved) {
                                         before_1 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
                                         after_1 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                        makeListView(entryContainer, "Reordered duplicate targets", { before: before_1, after: after_1, ordered: [true, true] });
+                                        makeListView(entryContainer, reorderingTitle, { before: before_1, after: after_1, ordered: [true, true] });
                                     }
                                     return [2];
                             }
