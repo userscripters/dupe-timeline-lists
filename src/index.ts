@@ -5,6 +5,12 @@ type TimelineEventType =
     | "history"
     | "voteaggregate";
 
+interface DiffViewConfig {
+    from: string[];
+    to: string[];
+    titles: Record<string, string>;
+}
+
 interface ListViewConfig {
     before?: Array<string | HTMLAnchorElement>,
     after?: Array<string | HTMLAnchorElement>;
@@ -30,7 +36,21 @@ window.addEventListener("load", async () => {
         [
             "ul.dupe-timeline-list { list-style: none; margin-left: 0; }",
             "ol.dupe-timeline-list { margin-left: 1em; }",
-            ".dupe-timeline-list:last-child { margin-bottom: 0; }"
+            ".dupe-timeline-list:last-child { margin-bottom: 0; }",
+            `.dupe-timeline-list .diff-added,
+             .dupe-timeline-list .diff-removed {
+                margin-left: 1em;
+            }`,
+            `.dupe-timeline-list .diff-added:before,
+             .dupe-timeline-list .diff-removed:before {
+                display: inline-block;
+                margin-left: -2em;
+                width: 1em;
+                text-align: center;
+                color: var(--black-750);
+            }`,
+            ".dupe-timeline-list .diff-added:before { content: \"+\"; }",
+            ".dupe-timeline-list .diff-removed:before { content: \"-\"; }"
         ].forEach((r) => sheet.insertRule(r));
     };
 
@@ -38,11 +58,12 @@ window.addEventListener("load", async () => {
 
     const isAnchor = (node: ChildNode | Node): node is HTMLAnchorElement => node.nodeName.toUpperCase() === "A";
 
-    const toAnchor = (url: string, label: string): HTMLAnchorElement => {
+    const toAnchor = (url: string, label: string, ...classes: string[]): HTMLAnchorElement => {
         const anchor = document.createElement("a");
         anchor.href = url;
         anchor.textContent = label;
         anchor.target = "_blank";
+        anchor.classList.add(...classes);
         return anchor;
     };
 
@@ -86,6 +107,25 @@ window.addEventListener("load", async () => {
         // https://regex101.com/r/3OD4V9/1
         const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
         return postId;
+    };
+
+    const makeDiffView = (
+        container: Element,
+        title: string,
+        { from, to, titles }: DiffViewConfig
+    ) => {
+        container.append(toSpan(title));
+
+        const diff = from.map((url) => toAnchor(url, titles[url], ...(to.includes(url) ? [] : ["diff-removed"])));
+
+        to.forEach((url, idx, self) => {
+            if (from.includes(url)) return;
+            const nextUrl = self[idx + 1];
+            const insertAtIndex = diff.findIndex((a) => a.href === nextUrl) + 1;
+            diff.splice(insertAtIndex, 0, toAnchor(url, titles[url], "diff-added"));
+        });
+
+        container.append(toList(diff));
     };
 
     const makeListView = (
