@@ -139,7 +139,12 @@ window.addEventListener("load", async () => {
         if (after) container.append(toList(after, afterOrdered));
     };
 
-    const processEntry = async (entryContainer: Element, type: "revisions" | "timeline", revisionNum?: string | number) => {
+    const processEntry = async (
+        entryContainer: Element,
+        type: "revisions" | "timeline",
+        revisionNum?: string | number,
+        useDiffView = false
+    ) => {
         const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
             console.debug(`[${scriptName}] missing duplicate list edit ${type} entry container`);
@@ -172,6 +177,14 @@ window.addEventListener("load", async () => {
 
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
+
+        if (numAdded || numRemoved && useDiffView) {
+            return makeDiffView(
+                entryContainer,
+                `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`,
+                { from, to, titles: anchorTitles }
+            );
+        }
 
         if (numAdded) {
             makeListView(
@@ -255,9 +268,14 @@ window.addEventListener("load", async () => {
     const storage = Store.locateStorage();
     const store = new Store.default(scriptName, storage);
 
-    const key = "always-use-lists";
-    const alwaysUseLists = await store.load(key, false);
-    await store.save(key, alwaysUseLists);
+    const useListsKey = "always-use-lists";
+    const useDiffKey = "use-diff-view";
+
+    const alwaysUseLists = await store.load(useListsKey, false);
+    const useDiffView = await store.load(useDiffKey, false);
+
+    await store.save(useListsKey, alwaysUseLists);
+    await store.save(useDiffKey, useDiffView);
 
     if (location.pathname.includes("revisions")) {
         const revisionsTable = document.querySelector(".js-revisions");
@@ -276,7 +294,7 @@ window.addEventListener("load", async () => {
             const revisionNum = numCell?.textContent?.trim() || "";
             if (!revisionNum || Number.isNaN(+revisionNum)) return;
 
-            processEntry(commentCell, "revisions", revisionNum);
+            processEntry(commentCell, "revisions", revisionNum, useDiffView);
         });
 
         return;
@@ -315,7 +333,7 @@ window.addEventListener("load", async () => {
             return a + 1;
         }, 0);
 
-        processEntry(commentCell, "timeline", revisionNum);
+        processEntry(commentCell, "timeline", revisionNum, useDiffView);
     });
 
 }, { once: true });

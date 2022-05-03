@@ -118,7 +118,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 ;
 window.addEventListener("load", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeListView, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, key, alwaysUseLists, revisionsTable, timelineTable, revisionActions;
+    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeDiffView, makeListView, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, alwaysUseLists, useDiffView, revisionsTable, timelineTable, revisionActions;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -133,16 +133,26 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     [
                         "ul.dupe-timeline-list { list-style: none; margin-left: 0; }",
                         "ol.dupe-timeline-list { margin-left: 1em; }",
-                        ".dupe-timeline-list:last-child { margin-bottom: 0; }"
+                        ".dupe-timeline-list:last-child { margin-bottom: 0; }",
+                        ".dupe-timeline-list .diff-added,\n             .dupe-timeline-list .diff-removed {\n                margin-left: 1em;\n            }",
+                        ".dupe-timeline-list .diff-added:before,\n             .dupe-timeline-list .diff-removed:before {\n                display: inline-block;\n                margin-left: -2em;\n                width: 1em;\n                text-align: center;\n                color: var(--black-750);\n            }",
+                        ".dupe-timeline-list .diff-added:before { content: \"+\"; }",
+                        ".dupe-timeline-list .diff-removed:before { content: \"-\"; }"
                     ].forEach(function (r) { return sheet.insertRule(r); });
                 };
                 clear = function (node) { return __spreadArray([], __read(node.children), false).forEach(function (child) { return child.remove(); }); };
                 isAnchor = function (node) { return node.nodeName.toUpperCase() === "A"; };
                 toAnchor = function (url, label) {
+                    var _a;
+                    var classes = [];
+                    for (var _i = 2; _i < arguments.length; _i++) {
+                        classes[_i - 2] = arguments[_i];
+                    }
                     var anchor = document.createElement("a");
                     anchor.href = url;
                     anchor.textContent = label;
                     anchor.target = "_blank";
+                    (_a = anchor.classList).add.apply(_a, __spreadArray([], __read(classes), false));
                     return anchor;
                 };
                 toSpan = function (text) {
@@ -179,6 +189,19 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     var _a = __read(/posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [], 2), postId = _a[1];
                     return postId;
                 };
+                makeDiffView = function (container, title, _a) {
+                    var from = _a.from, to = _a.to, titles = _a.titles;
+                    container.append(toSpan(title));
+                    var diff = from.map(function (url) { return toAnchor.apply(void 0, __spreadArray([url, titles[url]], __read((to.includes(url) ? [] : ["diff-removed"])), false)); });
+                    to.forEach(function (url, idx, self) {
+                        if (from.includes(url))
+                            return;
+                        var nextUrl = self[idx + 1];
+                        var insertAtIndex = diff.findIndex(function (a) { return a.href === nextUrl; }) + 1;
+                        diff.splice(insertAtIndex, 0, toAnchor(url, titles[url], "diff-added"));
+                    });
+                    container.append(toList(diff));
+                };
                 makeListView = function (container, title, _a) {
                     var before = _a.before, after = _a.after, ordered = _a.ordered;
                     container.append(toSpan(title));
@@ -188,104 +211,117 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     if (after)
                         container.append(toList(after, afterOrdered));
                 };
-                processEntry = function (entryContainer, type, revisionNum) { return __awaiter(void 0, void 0, void 0, function () {
-                    var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, before_1, after_1, before_2, after_2;
-                    var _c;
-                    return __generator(this, function (_d) {
-                        switch (_d.label) {
-                            case 0:
-                                commentContainer = entryContainer.querySelector("span");
-                                if (!commentContainer) {
-                                    console.debug("[".concat(scriptName, "] missing duplicate list edit ").concat(type, " entry container"));
-                                    return [2];
-                                }
-                                childNodes = commentContainer.childNodes;
-                                nodes = __spreadArray([], __read(childNodes), false);
-                                fromToSeparator = nodes.findIndex(function (_a) {
-                                    var textContent = _a.textContent;
-                                    return textContent === fromToSeparatorText;
-                                });
-                                if (fromToSeparator === -1) {
-                                    console.debug("[".concat(scriptName, "] missing from/to separator text"));
-                                    return [2];
-                                }
-                                from = nodes.slice(0, fromToSeparator).filter(isAnchor).map(toHref);
-                                to = nodes.slice(fromToSeparator + 1).filter(isAnchor).map(toHref);
-                                _a = diffArrays(from, to), added = _a.added, removed = _a.removed;
-                                anchorTitles = {};
-                                commentContainer.querySelectorAll("a").forEach(function (_a) {
-                                    var href = _a.href, textContent = _a.textContent;
-                                    anchorTitles[href] = textContent || href;
-                                });
-                                addedLinks = added.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                removedLinks = removed.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                clear(entryContainer);
-                                numAdded = addedLinks.length;
-                                numRemoved = removedLinks.length;
-                                if (numAdded) {
-                                    makeListView(entryContainer, "Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target")), {
-                                        before: addedLinks,
-                                        ordered: [alwaysUseLists || numAdded > 1]
+                processEntry = function (entryContainer, type, revisionNum, useDiffView) {
+                    if (useDiffView === void 0) { useDiffView = false; }
+                    return __awaiter(void 0, void 0, void 0, function () {
+                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, anchorTitles, addedLinks, removedLinks, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, idToAnchor, before_1, after_1, before_2, after_2;
+                        var _c;
+                        return __generator(this, function (_d) {
+                            switch (_d.label) {
+                                case 0:
+                                    commentContainer = entryContainer.querySelector("span");
+                                    if (!commentContainer) {
+                                        console.debug("[".concat(scriptName, "] missing duplicate list edit ").concat(type, " entry container"));
+                                        return [2];
+                                    }
+                                    childNodes = commentContainer.childNodes;
+                                    nodes = __spreadArray([], __read(childNodes), false);
+                                    fromToSeparator = nodes.findIndex(function (_a) {
+                                        var textContent = _a.textContent;
+                                        return textContent === fromToSeparatorText;
                                     });
-                                }
-                                if (numRemoved) {
-                                    makeListView(entryContainer, "Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target")), {
-                                        before: removedLinks,
-                                        ordered: [alwaysUseLists || numRemoved > 1]
+                                    if (fromToSeparator === -1) {
+                                        console.debug("[".concat(scriptName, "] missing from/to separator text"));
+                                        return [2];
+                                    }
+                                    from = nodes.slice(0, fromToSeparator).filter(isAnchor).map(toHref);
+                                    to = nodes.slice(fromToSeparator + 1).filter(isAnchor).map(toHref);
+                                    _a = diffArrays(from, to), added = _a.added, removed = _a.removed;
+                                    anchorTitles = {};
+                                    commentContainer.querySelectorAll("a").forEach(function (_a) {
+                                        var href = _a.href, textContent = _a.textContent;
+                                        anchorTitles[href] = textContent || href;
                                     });
-                                }
-                                if (!(!numAdded && !numRemoved && revisionNum)) return [3, 3];
-                                postId = getPostId();
-                                if (!postId)
+                                    addedLinks = added.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                    removedLinks = removed.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                    clear(entryContainer);
+                                    numAdded = addedLinks.length;
+                                    numRemoved = removedLinks.length;
+                                    if (numAdded || numRemoved && useDiffView) {
+                                        return [2, makeDiffView(entryContainer, "Added ".concat(numAdded, ", removed ").concat(numRemoved, " ").concat(pluralise(numRemoved, "target")), { from: from, to: to, titles: anchorTitles })];
+                                    }
+                                    if (numAdded) {
+                                        makeListView(entryContainer, "Added ".concat(numAdded, " duplicate ").concat(pluralise(numAdded, "target")), {
+                                            before: addedLinks,
+                                            ordered: [alwaysUseLists || numAdded > 1]
+                                        });
+                                    }
+                                    if (numRemoved) {
+                                        makeListView(entryContainer, "Removed ".concat(numRemoved, " duplicate ").concat(pluralise(numRemoved, "target")), {
+                                            before: removedLinks,
+                                            ordered: [alwaysUseLists || numRemoved > 1]
+                                        });
+                                    }
+                                    if (!(!numAdded && !numRemoved && revisionNum)) return [3, 3];
+                                    postId = getPostId();
+                                    if (!postId)
+                                        return [2];
+                                    return [4, fetch("/revisions/".concat(postId, "/").concat(revisionNum))];
+                                case 1:
+                                    res = _d.sent();
+                                    if (!res.ok)
+                                        return [2];
+                                    return [4, res.text()];
+                                case 2:
+                                    page = _d.sent();
+                                    diffNode = $(page)
+                                        .find("[title='revision ".concat(revisionNum, "']"))
+                                        .next()
+                                        .contents()
+                                        .get(0);
+                                    diffString = ((_c = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || "";
+                                    _b = __read(diffString.split(/\s+-\s+/), 2), fromStr = _b[0], toStr = _b[1];
+                                    fromIds = fromStr.replace(/^from\s+/, "").split(",");
+                                    toIds = toStr.replace(/^to\s+/, "").split(",");
+                                    idToAnchor = function (id) {
+                                        var expr = new RegExp("\\/".concat(id, "\\/"));
+                                        var url = from.find(function (url) { return expr.test(url); });
+                                        return url ? toAnchor(url, anchorTitles[url]) : id;
+                                    };
+                                    before_1 = fromIds.map(idToAnchor);
+                                    after_1 = toIds.map(idToAnchor);
+                                    makeListView(entryContainer, "Reodered duplicate targets", { before: before_1, after: after_1, ordered: [true, true] });
                                     return [2];
-                                return [4, fetch("/revisions/".concat(postId, "/").concat(revisionNum))];
-                            case 1:
-                                res = _d.sent();
-                                if (!res.ok)
+                                case 3:
+                                    if (!numAdded && !numRemoved) {
+                                        before_2 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                        after_2 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
+                                        makeListView(entryContainer, "Reodered duplicate targets", { before: before_2, after: after_2, ordered: [true, true] });
+                                    }
                                     return [2];
-                                return [4, res.text()];
-                            case 2:
-                                page = _d.sent();
-                                diffNode = $(page)
-                                    .find("[title='revision ".concat(revisionNum, "']"))
-                                    .next()
-                                    .contents()
-                                    .get(0);
-                                diffString = ((_c = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || "";
-                                _b = __read(diffString.split(/\s+-\s+/), 2), fromStr = _b[0], toStr = _b[1];
-                                fromIds = fromStr.replace(/^from\s+/, "").split(",");
-                                toIds = toStr.replace(/^to\s+/, "").split(",");
-                                idToAnchor = function (id) {
-                                    var expr = new RegExp("\\/".concat(id, "\\/"));
-                                    var url = from.find(function (url) { return expr.test(url); });
-                                    return url ? toAnchor(url, anchorTitles[url]) : id;
-                                };
-                                before_1 = fromIds.map(idToAnchor);
-                                after_1 = toIds.map(idToAnchor);
-                                makeListView(entryContainer, "Reodered duplicate targets", { before: before_1, after: after_1, ordered: [true, true] });
-                                return [2];
-                            case 3:
-                                if (!numAdded && !numRemoved) {
-                                    before_2 = from.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                    after_2 = to.map(function (url) { return toAnchor(url, anchorTitles[url]); });
-                                    makeListView(entryContainer, "Reodered duplicate targets", { before: before_2, after: after_2, ordered: [true, true] });
-                                }
-                                return [2];
-                        }
+                            }
+                        });
                     });
-                }); };
+                };
                 scriptName = "dupe-timeline-lists";
                 duplicateListEditAction = "duplicates list edited";
                 fromToSeparatorText = " to ";
                 appendStyles();
                 storage = Store.locateStorage();
                 store = new Store.default(scriptName, storage);
-                key = "always-use-lists";
-                return [4, store.load(key, false)];
+                useListsKey = "always-use-lists";
+                useDiffKey = "use-diff-view";
+                return [4, store.load(useListsKey, false)];
             case 1:
                 alwaysUseLists = _a.sent();
-                return [4, store.save(key, alwaysUseLists)];
+                return [4, store.load(useDiffKey, false)];
             case 2:
+                useDiffView = _a.sent();
+                return [4, store.save(useListsKey, alwaysUseLists)];
+            case 3:
+                _a.sent();
+                return [4, store.save(useDiffKey, useDiffView)];
+            case 4:
                 _a.sent();
                 if (location.pathname.includes("revisions")) {
                     revisionsTable = document.querySelector(".js-revisions");
@@ -302,7 +338,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                         var revisionNum = ((_b = numCell === null || numCell === void 0 ? void 0 : numCell.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
                         if (!revisionNum || Number.isNaN(+revisionNum))
                             return;
-                        processEntry(commentCell, "revisions", revisionNum);
+                        processEntry(commentCell, "revisions", revisionNum, useDiffView);
                     });
                     return [2];
                 }
@@ -334,7 +370,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                             return a;
                         return a + 1;
                     }, 0);
-                    processEntry(commentCell, "timeline", revisionNum);
+                    processEntry(commentCell, "timeline", revisionNum, useDiffView);
                 });
                 return [2];
         }

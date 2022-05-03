@@ -68,16 +68,31 @@ window.addEventListener("load", async () => {
         [
             "ul.dupe-timeline-list { list-style: none; margin-left: 0; }",
             "ol.dupe-timeline-list { margin-left: 1em; }",
-            ".dupe-timeline-list:last-child { margin-bottom: 0; }"
+            ".dupe-timeline-list:last-child { margin-bottom: 0; }",
+            `.dupe-timeline-list .diff-added,
+             .dupe-timeline-list .diff-removed {
+                margin-left: 1em;
+            }`,
+            `.dupe-timeline-list .diff-added:before,
+             .dupe-timeline-list .diff-removed:before {
+                display: inline-block;
+                margin-left: -2em;
+                width: 1em;
+                text-align: center;
+                color: var(--black-750);
+            }`,
+            ".dupe-timeline-list .diff-added:before { content: \"+\"; }",
+            ".dupe-timeline-list .diff-removed:before { content: \"-\"; }"
         ].forEach((r) => sheet.insertRule(r));
     };
     const clear = (node) => [...node.children].forEach((child) => child.remove());
     const isAnchor = (node) => node.nodeName.toUpperCase() === "A";
-    const toAnchor = (url, label) => {
+    const toAnchor = (url, label, ...classes) => {
         const anchor = document.createElement("a");
         anchor.href = url;
         anchor.textContent = label;
         anchor.target = "_blank";
+        anchor.classList.add(...classes);
         return anchor;
     };
     const toSpan = (text) => {
@@ -110,6 +125,18 @@ window.addEventListener("load", async () => {
         const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
         return postId;
     };
+    const makeDiffView = (container, title, { from, to, titles }) => {
+        container.append(toSpan(title));
+        const diff = from.map((url) => toAnchor(url, titles[url], ...(to.includes(url) ? [] : ["diff-removed"])));
+        to.forEach((url, idx, self) => {
+            if (from.includes(url))
+                return;
+            const nextUrl = self[idx + 1];
+            const insertAtIndex = diff.findIndex((a) => a.href === nextUrl) + 1;
+            diff.splice(insertAtIndex, 0, toAnchor(url, titles[url], "diff-added"));
+        });
+        container.append(toList(diff));
+    };
     const makeListView = (container, title, { before, after, ordered }) => {
         container.append(toSpan(title));
         const [beforeOrdered, afterOrdered] = ordered;
@@ -118,7 +145,7 @@ window.addEventListener("load", async () => {
         if (after)
             container.append(toList(after, afterOrdered));
     };
-    const processEntry = async (entryContainer, type, revisionNum) => {
+    const processEntry = async (entryContainer, type, revisionNum, useDiffView = false) => {
         var _a;
         const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
@@ -144,6 +171,9 @@ window.addEventListener("load", async () => {
         clear(entryContainer);
         const { length: numAdded } = addedLinks;
         const { length: numRemoved } = removedLinks;
+        if (numAdded || numRemoved && useDiffView) {
+            return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { from, to, titles: anchorTitles });
+        }
         if (numAdded) {
             makeListView(entryContainer, `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`, {
                 before: addedLinks,
@@ -195,9 +225,12 @@ window.addEventListener("load", async () => {
     appendStyles();
     const storage = Store.locateStorage();
     const store = new Store.default(scriptName, storage);
-    const key = "always-use-lists";
-    const alwaysUseLists = await store.load(key, false);
-    await store.save(key, alwaysUseLists);
+    const useListsKey = "always-use-lists";
+    const useDiffKey = "use-diff-view";
+    const alwaysUseLists = await store.load(useListsKey, false);
+    const useDiffView = await store.load(useDiffKey, false);
+    await store.save(useListsKey, alwaysUseLists);
+    await store.save(useDiffKey, useDiffView);
     if (location.pathname.includes("revisions")) {
         const revisionsTable = document.querySelector(".js-revisions");
         if (!revisionsTable) {
@@ -213,7 +246,7 @@ window.addEventListener("load", async () => {
             const revisionNum = ((_b = numCell === null || numCell === void 0 ? void 0 : numCell.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
             if (!revisionNum || Number.isNaN(+revisionNum))
                 return;
-            processEntry(commentCell, "revisions", revisionNum);
+            processEntry(commentCell, "revisions", revisionNum, useDiffView);
         });
         return;
     }
@@ -245,6 +278,6 @@ window.addEventListener("load", async () => {
                 return a;
             return a + 1;
         }, 0);
-        processEntry(commentCell, "timeline", revisionNum);
+        processEntry(commentCell, "timeline", revisionNum, useDiffView);
     });
 }, { once: true });
