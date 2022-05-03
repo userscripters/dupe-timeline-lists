@@ -109,6 +109,27 @@ window.addEventListener("load", async () => {
         return postId;
     };
 
+    const makeReorderDiffView = (
+        container: Element,
+        title: string,
+        { from, to, titles }: DiffViewConfig
+    ) => {
+        container.append(toSpan(title));
+
+        const diff = from.flatMap((url, idx) => {
+            const newUrl = to[idx];
+
+            if (url === newUrl) return toAnchor(url, titles[url]);
+
+            return [
+                toAnchor(url, titles[url], "diff-removed"),
+                toAnchor(newUrl, titles[newUrl], "diff-added")
+            ];
+        });
+
+        container.append(toList(diff));
+    };
+
     const makeDiffView = (
         container: Element,
         title: string,
