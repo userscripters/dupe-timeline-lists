@@ -161,9 +161,14 @@ window.addEventListener("load", async () => {
         after.forEach((url, idx, self) => {
             if (before.includes(url))
                 return;
+            const added = toAnchor(url, titles[url], "diff-added");
             const nextUrl = self[idx + 1];
-            const insertAtIndex = diff.findIndex((a) => a.href === nextUrl) + 1;
-            diff.splice(insertAtIndex, 0, toAnchor(url, titles[url], "diff-added"));
+            if (!nextUrl) {
+                diff.push(added);
+                return;
+            }
+            const insertAtIndex = diff.findIndex((a) => a.href === nextUrl);
+            diff.splice(insertAtIndex, 0, added);
         });
         container.append(toList(diff));
     };
@@ -178,6 +183,21 @@ window.addEventListener("load", async () => {
             const to = after.map((url) => toAnchor(url, titles[url]));
             container.append(toList(to, afterOrdered));
         }
+    };
+    const getRevisionNumber = (rows, rowIndex) => {
+        return rows.reduceRight((a, c, ci) => {
+            var _a, _b;
+            if (ci < rowIndex)
+                return a;
+            const [_dc, tc, ac] = c.cells;
+            const type = ((_a = tc === null || tc === void 0 ? void 0 : tc.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+            if (type !== "history")
+                return a;
+            const action = ((_b = ac === null || ac === void 0 ? void 0 : ac.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+            if (!revisionActions.has(action))
+                return a;
+            return a + 1;
+        }, 0);
     };
     const processEntry = async (entryContainer, type, revisionNum, useDiffView = false) => {
         var _a;
@@ -291,7 +311,8 @@ window.addEventListener("load", async () => {
         return;
     }
     const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
-    timelineTable.querySelectorAll("tr").forEach((row) => {
+    const timelineRows = [...timelineTable.rows];
+    timelineRows.forEach((row, ri) => {
         var _a;
         const { dataset } = row;
         const { eventtype } = dataset;
@@ -302,17 +323,7 @@ window.addEventListener("load", async () => {
         const action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
         if (action !== duplicateListEditAction)
             return;
-        const revisionNum = [...timelineTable.rows].reduce((a, c) => {
-            var _a, _b;
-            const [_dc, tc, ac] = c.cells;
-            const type = ((_a = tc === null || tc === void 0 ? void 0 : tc.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
-            if (type !== "history")
-                return a;
-            const action = ((_b = ac === null || ac === void 0 ? void 0 : ac.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
-            if (!revisionActions.has(action))
-                return a;
-            return a + 1;
-        }, 0);
+        const revisionNum = getRevisionNumber(timelineRows, ri);
         processEntry(commentCell, "timeline", revisionNum, useDiffView);
     });
 }, { once: true });

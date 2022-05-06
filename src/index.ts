@@ -191,6 +191,30 @@ window.addEventListener("load", async () => {
         }
     };
 
+    /**
+     * @summary gets revision number of the current row
+     * @param rows timeline event rows in DESC order
+     * @param rowIndex index of the target row
+     */
+    const getRevisionNumber = (
+        rows: HTMLTableRowElement[],
+        rowIndex: number
+    ) => {
+        return rows.reduceRight((a, c, ci) => {
+            if (ci < rowIndex) return a;
+
+            const [_dc, tc, ac] = c.cells;
+
+            const type = tc?.textContent?.trim() || "";
+            if (type !== "history") return a;
+
+            const action = ac?.textContent?.trim() || "";
+            if (!revisionActions.has(action)) return a;
+
+            return a + 1;
+        }, 0);
+    };
+
     const processEntry = async (
         entryContainer: Element,
         type: "revisions" | "timeline",
@@ -377,19 +401,7 @@ window.addEventListener("load", async () => {
         const action = actionCell?.textContent?.trim() || "";
         if (action !== duplicateListEditAction) return;
 
-        const revisionNum = timelineRows.reduceRight((a, c, ci) => {
-            if (ci < ri) return a;
-
-            const [_dc, tc, ac] = c.cells;
-
-            const type = tc?.textContent?.trim() || "";
-            if (type !== "history") return a;
-
-            const action = ac?.textContent?.trim() || "";
-            if (!revisionActions.has(action)) return a;
-
-            return a + 1;
-        }, 0);
+        const revisionNum = getRevisionNumber(timelineRows, ri);
 
         processEntry(commentCell, "timeline", revisionNum, useDiffView);
     });

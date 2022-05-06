@@ -118,7 +118,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 ;
 window.addEventListener("load", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeReorderDiffView, makeDiffView, makeListView, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, useColorDiffsKey, alwaysUseLists, useDiffView, useColorDiffs, revisionsTable, timelineTable, revisionActions;
+    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeReorderDiffView, makeDiffView, makeListView, getRevisionNumber, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, useColorDiffsKey, alwaysUseLists, useDiffView, useColorDiffs, revisionsTable, timelineTable, revisionActions, timelineRows;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -218,9 +218,14 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     after.forEach(function (url, idx, self) {
                         if (before.includes(url))
                             return;
+                        var added = toAnchor(url, titles[url], "diff-added");
                         var nextUrl = self[idx + 1];
-                        var insertAtIndex = diff.findIndex(function (a) { return a.href === nextUrl; }) + 1;
-                        diff.splice(insertAtIndex, 0, toAnchor(url, titles[url], "diff-added"));
+                        if (!nextUrl) {
+                            diff.push(added);
+                            return;
+                        }
+                        var insertAtIndex = diff.findIndex(function (a) { return a.href === nextUrl; });
+                        diff.splice(insertAtIndex, 0, added);
                     });
                     container.append(toList(diff));
                 };
@@ -236,6 +241,21 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                         var to = after.map(function (url) { return toAnchor(url, titles[url]); });
                         container.append(toList(to, afterOrdered));
                     }
+                };
+                getRevisionNumber = function (rows, rowIndex) {
+                    return rows.reduceRight(function (a, c, ci) {
+                        var _a, _b;
+                        if (ci < rowIndex)
+                            return a;
+                        var _c = __read(c.cells, 3), _dc = _c[0], tc = _c[1], ac = _c[2];
+                        var type = ((_a = tc === null || tc === void 0 ? void 0 : tc.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+                        if (type !== "history")
+                            return a;
+                        var action = ((_b = ac === null || ac === void 0 ? void 0 : ac.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+                        if (!revisionActions.has(action))
+                            return a;
+                        return a + 1;
+                    }, 0);
                 };
                 processEntry = function (entryContainer, type, revisionNum, useDiffView) {
                     if (useDiffView === void 0) { useDiffView = false; }
@@ -378,7 +398,8 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     return [2];
                 }
                 revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
-                timelineTable.querySelectorAll("tr").forEach(function (row) {
+                timelineRows = __spreadArray([], __read(timelineTable.rows), false);
+                timelineRows.forEach(function (row, ri) {
                     var _a;
                     var dataset = row.dataset;
                     var eventtype = dataset.eventtype;
@@ -389,17 +410,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     var action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
                     if (action !== duplicateListEditAction)
                         return;
-                    var revisionNum = __spreadArray([], __read(timelineTable.rows), false).reduce(function (a, c) {
-                        var _a, _b;
-                        var _c = __read(c.cells, 3), _dc = _c[0], tc = _c[1], ac = _c[2];
-                        var type = ((_a = tc === null || tc === void 0 ? void 0 : tc.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
-                        if (type !== "history")
-                            return a;
-                        var action = ((_b = ac === null || ac === void 0 ? void 0 : ac.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
-                        if (!revisionActions.has(action))
-                            return a;
-                        return a + 1;
-                    }, 0);
+                    var revisionNum = getRevisionNumber(timelineRows, ri);
                     processEntry(commentCell, "timeline", revisionNum, useDiffView);
                 });
                 return [2];
