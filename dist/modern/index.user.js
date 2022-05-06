@@ -142,7 +142,7 @@ window.addEventListener("load", async () => {
         const [, postId] = /posts\/(\d+)\/(?:revisions|timeline)/.exec(pathname) || [];
         return postId;
     };
-    const makeReorderDiffView = (container, title, { before = [], after = [], titles }) => {
+    const makeReorderDiffView = (container, title, { append = [], before = [], after = [], titles }) => {
         container.append(toSpan(title));
         const diff = before.flatMap((url, idx) => {
             const newUrl = after[idx];
@@ -153,9 +153,9 @@ window.addEventListener("load", async () => {
                 toAnchor(newUrl, titles[newUrl], "diff-added")
             ];
         });
-        container.append(toList(diff));
+        container.append(toList(diff), ...append);
     };
-    const makeDiffView = (container, title, { before = [], after = [], titles }) => {
+    const makeDiffView = (container, title, { append = [], before = [], after = [], titles }) => {
         container.append(toSpan(title));
         const diff = before.map((url) => toAnchor(url, titles[url], ...(after.includes(url) ? [] : ["diff-removed"])));
         after.forEach((url, idx, self) => {
@@ -170,9 +170,9 @@ window.addEventListener("load", async () => {
             const insertAtIndex = diff.findIndex((a) => a.href === nextUrl);
             diff.splice(insertAtIndex, 0, added);
         });
-        container.append(toList(diff));
+        container.append(toList(diff), ...append);
     };
-    const makeListView = (container, title, { before, after, ordered, titles }) => {
+    const makeListView = (container, title, { append = [], before, after, ordered, titles }) => {
         container.append(toSpan(title));
         const [beforeOrdered, afterOrdered] = ordered;
         if (before) {
@@ -183,6 +183,7 @@ window.addEventListener("load", async () => {
             const to = after.map((url) => toAnchor(url, titles[url]));
             container.append(toList(to, afterOrdered));
         }
+        container.append(...append);
     };
     const getRevisionNumber = (rows, rowIndex) => {
         return rows.reduceRight((a, c, ci) => {
@@ -205,7 +206,7 @@ window.addEventListener("load", async () => {
         return url || id;
     };
     const processEntry = async (entryContainer, type, revisionNum, useDiffView = false) => {
-        var _a;
+        var _a, _b;
         const commentContainer = entryContainer.querySelector("span");
         if (!commentContainer) {
             console.debug(`[${scriptName}] missing duplicate list edit ${type} entry container`);
@@ -225,34 +226,39 @@ window.addEventListener("load", async () => {
         commentContainer.querySelectorAll("a").forEach(({ href, textContent }) => {
             titles[href] = textContent || href;
         });
-        clear(entryContainer);
         const { length: numAdded } = added;
         const { length: numRemoved } = removed;
         const postId = getPostId();
         if (!postId)
             return;
-        const res = await fetch(`/revisions/${postId}/${revisionNum}`);
+        const revLink = `/revisions/${postId}/${revisionNum}`;
+        const res = await fetch(revLink);
         if (!res.ok)
             return;
+        const revAnchorWrapper = (_a = entryContainer
+            .querySelector(`[href*='${revLink}']`)) === null || _a === void 0 ? void 0 : _a.parentElement;
+        const append = revAnchorWrapper ? [revAnchorWrapper] : [];
+        clear(entryContainer);
         const page = await res.text();
         const diffNode = $(page)
             .find(`[title='revision ${revisionNum}']`)
             .next()
             .contents()
             .get(0);
-        const diffString = ((_a = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+        const diffString = ((_b = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
         const [fromStr, toStr] = diffString.split(/\s+-\s+/);
         const fromIds = fromStr.replace(/^from\s+/, "").split(",");
         const toIds = toStr.replace(/^to\s+/, "").split(",");
         const before = fromIds.map((id) => hrefFromId(from, id));
         const after = toIds.map((id) => hrefFromId(to, id));
         if ((numAdded || numRemoved) && useDiffView) {
-            return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { before, after, titles: titles });
+            return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { append, before, after, titles: titles });
         }
         const reorderingTitle = "Reordered duplicate targets";
         if (numAdded || numRemoved) {
             if (numAdded) {
                 makeListView(entryContainer, `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`, {
+                    append,
                     before: added,
                     ordered: [alwaysUseLists || numAdded > 1],
                     titles
@@ -260,6 +266,7 @@ window.addEventListener("load", async () => {
             }
             if (numRemoved) {
                 makeListView(entryContainer, `Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`, {
+                    append,
                     before: removed,
                     ordered: [alwaysUseLists || numRemoved > 1],
                     titles
@@ -268,7 +275,7 @@ window.addEventListener("load", async () => {
             return;
         }
         const handler = useDiffView ? makeReorderDiffView : makeListView;
-        return handler(entryContainer, reorderingTitle, { before, after, titles, ordered: [true, true] });
+        return handler(entryContainer, reorderingTitle, { append, before, after, titles, ordered: [true, true] });
     };
     const scriptName = "dupe-timeline-lists";
     const duplicateListEditAction = "duplicates list edited";
