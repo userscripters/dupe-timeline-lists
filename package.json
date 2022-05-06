@@ -1,6 +1,6 @@
 {
     "name": "@userscripters/dupe-timeline-lists",
-    "version": "1.5.3",
+    "version": "1.5.4",
     "description": "Userscript for properly displaying duplicate lists in post timelines",
     "scripts": {
         "test": "mocha",
