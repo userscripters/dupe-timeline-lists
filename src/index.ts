@@ -117,6 +117,8 @@ window.addEventListener("load", async () => {
         return result;
     };
 
+    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
     const pluralise = (num: number, singular: string, suffix = "s") => `${singular}${num === 1 ? "" : suffix}`;
 
     const getPostId = (): string | undefined => {
@@ -400,22 +402,30 @@ window.addEventListener("load", async () => {
 
     const timelineRows = [...timelineTable.rows];
 
-    timelineRows.forEach((row, ri) => {
+    let ri = -1;
+    for (const row of timelineRows) {
+        ri += 1;
+
+        // avoid hammering the /revisions/<num> page
+        if (!(ri || ri % 10)) {
+            await delay(500);
+        }
+
         const { dataset } = row;
 
         const { eventtype } = dataset as { eventtype?: TimelineEventType; };
-        if (eventtype !== "history") return;
+        if (eventtype !== "history") continue;
 
         const { cells } = row;
 
         const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
 
         const action = actionCell?.textContent?.trim() || "";
-        if (action !== duplicateListEditAction) return;
+        if (action !== duplicateListEditAction) continue;
 
         const revisionNum = getRevisionNumber(timelineRows, ri);
 
         processEntry(commentCell, "timeline", revisionNum, useDiffView);
-    });
+    }
 
 }, { once: true });

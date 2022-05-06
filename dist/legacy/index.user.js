@@ -116,11 +116,24 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 ;
 window.addEventListener("load", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeReorderDiffView, makeDiffView, makeListView, getRevisionNumber, hrefFromId, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, useColorDiffsKey, alwaysUseLists, useDiffView, useColorDiffs, revisionsTable, timelineTable, revisionActions, timelineRows;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, delay, pluralise, getPostId, makeReorderDiffView, makeDiffView, makeListView, getRevisionNumber, hrefFromId, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, useColorDiffsKey, alwaysUseLists, useDiffView, useColorDiffs, revisionsTable, timelineTable, revisionActions, timelineRows, ri, timelineRows_1, timelineRows_1_1, row, dataset, eventtype, cells, _a, _dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell, action, revisionNum, e_1_1;
+    var e_1, _b;
+    var _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 appendStyles = function (useDiffView, useColorDiffs) {
                     var style = document.createElement("style");
@@ -188,6 +201,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     to.forEach(function (item) { return from.includes(item) || added.push(item); });
                     return result;
                 };
+                delay = function (ms) { return new Promise(function (resolve) { return setTimeout(resolve, ms); }); };
                 pluralise = function (num, singular, suffix) {
                     if (suffix === void 0) { suffix = "s"; }
                     return "".concat(singular).concat(num === 1 ? "" : suffix);
@@ -362,22 +376,22 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                 useColorDiffsKey = "use-color-diffs";
                 return [4, store.load(useListsKey, false)];
             case 1:
-                alwaysUseLists = _a.sent();
+                alwaysUseLists = _d.sent();
                 return [4, store.load(useDiffKey, false)];
             case 2:
-                useDiffView = _a.sent();
+                useDiffView = _d.sent();
                 return [4, store.load(useColorDiffsKey, false)];
             case 3:
-                useColorDiffs = _a.sent();
+                useColorDiffs = _d.sent();
                 return [4, store.save(useListsKey, alwaysUseLists)];
             case 4:
-                _a.sent();
+                _d.sent();
                 return [4, store.save(useDiffKey, useDiffView)];
             case 5:
-                _a.sent();
+                _d.sent();
                 return [4, store.save(useColorDiffsKey, useColorDiffs)];
             case 6:
-                _a.sent();
+                _d.sent();
                 appendStyles(useDiffView, useColorDiffs);
                 if (location.pathname.includes("revisions")) {
                     revisionsTable = document.querySelector(".js-revisions");
@@ -405,21 +419,49 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                 }
                 revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
                 timelineRows = __spreadArray([], __read(timelineTable.rows), false);
-                timelineRows.forEach(function (row, ri) {
-                    var _a;
-                    var dataset = row.dataset;
-                    var eventtype = dataset.eventtype;
-                    if (eventtype !== "history")
-                        return;
-                    var cells = row.cells;
-                    var _b = __read(cells, 6), _dateCell = _b[0], _typeCell = _b[1], actionCell = _b[2], _authorCell = _b[3], _licenseCell = _b[4], commentCell = _b[5];
-                    var action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
-                    if (action !== duplicateListEditAction)
-                        return;
-                    var revisionNum = getRevisionNumber(timelineRows, ri);
-                    processEntry(commentCell, "timeline", revisionNum, useDiffView);
-                });
-                return [2];
+                ri = -1;
+                _d.label = 7;
+            case 7:
+                _d.trys.push([7, 13, 14, 15]);
+                timelineRows_1 = __values(timelineRows), timelineRows_1_1 = timelineRows_1.next();
+                _d.label = 8;
+            case 8:
+                if (!!timelineRows_1_1.done) return [3, 12];
+                row = timelineRows_1_1.value;
+                ri += 1;
+                if (!!(ri || ri % 10)) return [3, 10];
+                return [4, delay(500)];
+            case 9:
+                _d.sent();
+                _d.label = 10;
+            case 10:
+                dataset = row.dataset;
+                eventtype = dataset.eventtype;
+                if (eventtype !== "history")
+                    return [3, 11];
+                cells = row.cells;
+                _a = __read(cells, 6), _dateCell = _a[0], _typeCell = _a[1], actionCell = _a[2], _authorCell = _a[3], _licenseCell = _a[4], commentCell = _a[5];
+                action = ((_c = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || "";
+                if (action !== duplicateListEditAction)
+                    return [3, 11];
+                revisionNum = getRevisionNumber(timelineRows, ri);
+                processEntry(commentCell, "timeline", revisionNum, useDiffView);
+                _d.label = 11;
+            case 11:
+                timelineRows_1_1 = timelineRows_1.next();
+                return [3, 8];
+            case 12: return [3, 15];
+            case 13:
+                e_1_1 = _d.sent();
+                e_1 = { error: e_1_1 };
+                return [3, 15];
+            case 14:
+                try {
+                    if (timelineRows_1_1 && !timelineRows_1_1.done && (_b = timelineRows_1.return)) _b.call(timelineRows_1);
+                }
+                finally { if (e_1) throw e_1.error; }
+                return [7];
+            case 15: return [2];
         }
     });
 }); }, { once: true });

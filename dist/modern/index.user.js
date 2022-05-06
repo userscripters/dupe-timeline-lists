@@ -57,6 +57,7 @@
 "use strict";
 ;
 window.addEventListener("load", async () => {
+    var _a;
     const appendStyles = (useDiffView, useColorDiffs) => {
         const style = document.createElement("style");
         document.head.append(style);
@@ -136,6 +137,7 @@ window.addEventListener("load", async () => {
         to.forEach((item) => from.includes(item) || added.push(item));
         return result;
     };
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     const pluralise = (num, singular, suffix = "s") => `${singular}${num === 1 ? "" : suffix}`;
     const getPostId = () => {
         const { pathname } = location;
@@ -318,18 +320,22 @@ window.addEventListener("load", async () => {
     }
     const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
     const timelineRows = [...timelineTable.rows];
-    timelineRows.forEach((row, ri) => {
-        var _a;
+    let ri = -1;
+    for (const row of timelineRows) {
+        ri += 1;
+        if (!(ri || ri % 10)) {
+            await delay(500);
+        }
         const { dataset } = row;
         const { eventtype } = dataset;
         if (eventtype !== "history")
-            return;
+            continue;
         const { cells } = row;
         const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
         const action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
         if (action !== duplicateListEditAction)
-            return;
+            continue;
         const revisionNum = getRevisionNumber(timelineRows, ri);
         processEntry(commentCell, "timeline", revisionNum, useDiffView);
-    });
+    }
 }, { once: true });
