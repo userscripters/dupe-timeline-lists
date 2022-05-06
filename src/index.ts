@@ -362,7 +362,9 @@ window.addEventListener("load", async () => {
 
     const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
 
-    timelineTable.querySelectorAll("tr").forEach((row) => {
+    const timelineRows = [...timelineTable.rows];
+
+    timelineRows.forEach((row, ri) => {
         const { dataset } = row;
 
         const { eventtype } = dataset as { eventtype?: TimelineEventType; };
@@ -375,7 +377,9 @@ window.addEventListener("load", async () => {
         const action = actionCell?.textContent?.trim() || "";
         if (action !== duplicateListEditAction) return;
 
-        const revisionNum = [...timelineTable.rows].reduce((a, c) => {
+        const revisionNum = timelineRows.reduceRight((a, c, ci) => {
+            if (ci < ri) return a;
+
             const [_dc, tc, ac] = c.cells;
 
             const type = tc?.textContent?.trim() || "";
