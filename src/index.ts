@@ -219,11 +219,41 @@ window.addEventListener("load", async () => {
         const { length: numAdded } = added;
         const { length: numRemoved } = removed;
 
+        const postId = getPostId();
+
+        if (!postId) return;
+
+        const res = await fetch(`/revisions/${postId}/${revisionNum}`);
+        if (!res.ok) return;
+
+        const page = await res.text();
+
+        const diffNode = $(page)
+            .find(`[title='revision ${revisionNum}']`)
+            .next()
+            .contents()
+            .get(0);
+
+        const diffString = diffNode?.textContent?.trim() || "";
+        const [fromStr, toStr] = diffString.split(/\s+-\s+/);
+
+        const fromIds = fromStr.replace(/^from\s+/, "").split(",");
+        const toIds = toStr.replace(/^to\s+/, "").split(",");
+
+        const hrefFromId = (links: string[], id: string) => {
+            const expr = new RegExp(`\\/${id}\\/`);
+            const url = links.find((url) => expr.test(url));
+            return url || id;
+        };
+
+        const before = fromIds.map((id) => hrefFromId(from, id));
+        const after = toIds.map((id) => hrefFromId(to, id));
+
         if ((numAdded || numRemoved) && useDiffView) {
             return makeDiffView(
                 entryContainer,
                 `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`,
-                { before: from, after: to, titles: titles }
+                { before, after, titles: titles }
             );
         }
 
@@ -253,37 +283,7 @@ window.addEventListener("load", async () => {
             );
         }
 
-        if (!numAdded && !numRemoved && revisionNum) {
-            const postId = getPostId();
-
-            if (!postId) return;
-
-            const res = await fetch(`/revisions/${postId}/${revisionNum}`);
-            if (!res.ok) return;
-
-            const page = await res.text();
-
-            const diffNode = $(page)
-                .find(`[title='revision ${revisionNum}']`)
-                .next()
-                .contents()
-                .get(0);
-
-            const diffString = diffNode?.textContent?.trim() || "";
-            const [fromStr, toStr] = diffString.split(/\s+-\s+/);
-
-            const fromIds = fromStr.replace(/^from\s+/, "").split(",");
-            const toIds = toStr.replace(/^to\s+/, "").split(",");
-
-            const toHref = (links: string[], id: string) => {
-                const expr = new RegExp(`\\/${id}\\/`);
-                const url = links.find((url) => expr.test(url));
-                return url || id;
-            };
-
-            const before = fromIds.map((id) => toHref(from, id));
-            const after = toIds.map((id) => toHref(to, id));
-
+        if (!numAdded && !numRemoved) {
             const handler = useDiffView ? makeReorderDiffView : makeListView;
 
             return handler(
@@ -298,7 +298,7 @@ window.addEventListener("load", async () => {
         return handler(
             entryContainer,
             reorderingTitle,
-            { before: from, after: to, titles, ordered: [true, true] }
+            { before, after, titles, ordered: [true, true] }
         );
     };
 

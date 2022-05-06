@@ -203,8 +203,31 @@ window.addEventListener("load", async () => {
         clear(entryContainer);
         const { length: numAdded } = added;
         const { length: numRemoved } = removed;
+        const postId = getPostId();
+        if (!postId)
+            return;
+        const res = await fetch(`/revisions/${postId}/${revisionNum}`);
+        if (!res.ok)
+            return;
+        const page = await res.text();
+        const diffNode = $(page)
+            .find(`[title='revision ${revisionNum}']`)
+            .next()
+            .contents()
+            .get(0);
+        const diffString = ((_a = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+        const [fromStr, toStr] = diffString.split(/\s+-\s+/);
+        const fromIds = fromStr.replace(/^from\s+/, "").split(",");
+        const toIds = toStr.replace(/^to\s+/, "").split(",");
+        const hrefFromId = (links, id) => {
+            const expr = new RegExp(`\\/${id}\\/`);
+            const url = links.find((url) => expr.test(url));
+            return url || id;
+        };
+        const before = fromIds.map((id) => hrefFromId(from, id));
+        const after = toIds.map((id) => hrefFromId(to, id));
         if ((numAdded || numRemoved) && useDiffView) {
-            return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { before: from, after: to, titles: titles });
+            return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { before, after, titles: titles });
         }
         const reorderingTitle = "Reordered duplicate targets";
         if (numAdded) {
@@ -221,35 +244,12 @@ window.addEventListener("load", async () => {
                 titles
             });
         }
-        if (!numAdded && !numRemoved && revisionNum) {
-            const postId = getPostId();
-            if (!postId)
-                return;
-            const res = await fetch(`/revisions/${postId}/${revisionNum}`);
-            if (!res.ok)
-                return;
-            const page = await res.text();
-            const diffNode = $(page)
-                .find(`[title='revision ${revisionNum}']`)
-                .next()
-                .contents()
-                .get(0);
-            const diffString = ((_a = diffNode === null || diffNode === void 0 ? void 0 : diffNode.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
-            const [fromStr, toStr] = diffString.split(/\s+-\s+/);
-            const fromIds = fromStr.replace(/^from\s+/, "").split(",");
-            const toIds = toStr.replace(/^to\s+/, "").split(",");
-            const toHref = (links, id) => {
-                const expr = new RegExp(`\\/${id}\\/`);
-                const url = links.find((url) => expr.test(url));
-                return url || id;
-            };
-            const before = fromIds.map((id) => toHref(from, id));
-            const after = toIds.map((id) => toHref(to, id));
+        if (!numAdded && !numRemoved) {
             const handler = useDiffView ? makeReorderDiffView : makeListView;
             return handler(entryContainer, reorderingTitle, { before, after, titles, ordered: [true, true] });
         }
         const handler = useDiffView ? makeReorderDiffView : makeListView;
-        return handler(entryContainer, reorderingTitle, { before: from, after: to, titles, ordered: [true, true] });
+        return handler(entryContainer, reorderingTitle, { before, after, titles, ordered: [true, true] });
     };
     const scriptName = "dupe-timeline-lists";
     const duplicateListEditAction = "duplicates list edited";
