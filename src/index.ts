@@ -157,9 +157,17 @@ window.addEventListener("load", async () => {
 
         after.forEach((url, idx, self) => {
             if (before.includes(url)) return;
+
+            const added = toAnchor(url, titles[url], "diff-added");
+
             const nextUrl = self[idx + 1];
-            const insertAtIndex = diff.findIndex((a) => a.href === nextUrl) + 1;
-            diff.splice(insertAtIndex, 0, toAnchor(url, titles[url], "diff-added"));
+            if (!nextUrl) {
+                diff.push(added);
+                return;
+            }
+
+            const insertAtIndex = diff.findIndex((a) => a.href === nextUrl);
+            diff.splice(insertAtIndex, 0, added);
         });
 
         container.append(toList(diff));
