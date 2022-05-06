@@ -250,23 +250,22 @@ window.addEventListener("load", async () => {
             return makeDiffView(entryContainer, `Added ${numAdded}, removed ${numRemoved} ${pluralise(numRemoved, "target")}`, { before, after, titles: titles });
         }
         const reorderingTitle = "Reordered duplicate targets";
-        if (numAdded) {
-            makeListView(entryContainer, `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`, {
-                before: added,
-                ordered: [alwaysUseLists || numAdded > 1],
-                titles
-            });
-        }
-        if (numRemoved) {
-            makeListView(entryContainer, `Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`, {
-                before: removed,
-                ordered: [alwaysUseLists || numRemoved > 1],
-                titles
-            });
-        }
-        if (!numAdded && !numRemoved) {
-            const handler = useDiffView ? makeReorderDiffView : makeListView;
-            return handler(entryContainer, reorderingTitle, { before, after, titles, ordered: [true, true] });
+        if (numAdded || numRemoved) {
+            if (numAdded) {
+                makeListView(entryContainer, `Added ${numAdded} duplicate ${pluralise(numAdded, "target")}`, {
+                    before: added,
+                    ordered: [alwaysUseLists || numAdded > 1],
+                    titles
+                });
+            }
+            if (numRemoved) {
+                makeListView(entryContainer, `Removed ${numRemoved} duplicate ${pluralise(numRemoved, "target")}`, {
+                    before: removed,
+                    ordered: [alwaysUseLists || numRemoved > 1],
+                    titles
+                });
+            }
+            return;
         }
         const handler = useDiffView ? makeReorderDiffView : makeListView;
         return handler(entryContainer, reorderingTitle, { before, after, titles, ordered: [true, true] });
