@@ -118,7 +118,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 ;
 window.addEventListener("load", function () { return __awaiter(void 0, void 0, void 0, function () {
-    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeReorderDiffView, makeDiffView, makeListView, getRevisionNumber, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, useColorDiffsKey, alwaysUseLists, useDiffView, useColorDiffs, revisionsTable, timelineTable, revisionActions, timelineRows;
+    var appendStyles, clear, isAnchor, toAnchor, toSpan, toHref, toList, diffArrays, pluralise, getPostId, makeReorderDiffView, makeDiffView, makeListView, getRevisionNumber, hrefFromId, processEntry, scriptName, duplicateListEditAction, fromToSeparatorText, storage, store, useListsKey, useDiffKey, useColorDiffsKey, alwaysUseLists, useDiffView, useColorDiffs, revisionsTable, timelineTable, revisionActions, timelineRows;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -257,10 +257,15 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                         return a + 1;
                     }, 0);
                 };
+                hrefFromId = function (links, id) {
+                    var expr = new RegExp("\\/".concat(id, "\\/"));
+                    var url = links.find(function (url) { return expr.test(url); });
+                    return url || id;
+                };
                 processEntry = function (entryContainer, type, revisionNum, useDiffView) {
                     if (useDiffView === void 0) { useDiffView = false; }
                     return __awaiter(void 0, void 0, void 0, function () {
-                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, titles, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, hrefFromId, before, after, reorderingTitle, handler_1, handler;
+                        var commentContainer, childNodes, nodes, fromToSeparator, from, to, _a, added, removed, titles, numAdded, numRemoved, postId, res, page, diffNode, diffString, _b, fromStr, toStr, fromIds, toIds, before, after, reorderingTitle, handler_1, handler;
                         var _c;
                         return __generator(this, function (_d) {
                             switch (_d.label) {
@@ -311,11 +316,6 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                                     _b = __read(diffString.split(/\s+-\s+/), 2), fromStr = _b[0], toStr = _b[1];
                                     fromIds = fromStr.replace(/^from\s+/, "").split(",");
                                     toIds = toStr.replace(/^to\s+/, "").split(",");
-                                    hrefFromId = function (links, id) {
-                                        var expr = new RegExp("\\/".concat(id, "\\/"));
-                                        var url = links.find(function (url) { return expr.test(url); });
-                                        return url || id;
-                                    };
                                     before = fromIds.map(function (id) { return hrefFromId(from, id); });
                                     after = toIds.map(function (id) { return hrefFromId(to, id); });
                                     if ((numAdded || numRemoved) && useDiffView) {

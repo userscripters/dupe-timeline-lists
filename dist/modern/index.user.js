@@ -199,6 +199,11 @@ window.addEventListener("load", async () => {
             return a + 1;
         }, 0);
     };
+    const hrefFromId = (links, id) => {
+        const expr = new RegExp(`\\/${id}\\/`);
+        const url = links.find((url) => expr.test(url));
+        return url || id;
+    };
     const processEntry = async (entryContainer, type, revisionNum, useDiffView = false) => {
         var _a;
         const commentContainer = entryContainer.querySelector("span");
@@ -239,11 +244,6 @@ window.addEventListener("load", async () => {
         const [fromStr, toStr] = diffString.split(/\s+-\s+/);
         const fromIds = fromStr.replace(/^from\s+/, "").split(",");
         const toIds = toStr.replace(/^to\s+/, "").split(",");
-        const hrefFromId = (links, id) => {
-            const expr = new RegExp(`\\/${id}\\/`);
-            const url = links.find((url) => expr.test(url));
-            return url || id;
-        };
         const before = fromIds.map((id) => hrefFromId(from, id));
         const after = toIds.map((id) => hrefFromId(to, id));
         if ((numAdded || numRemoved) && useDiffView) {

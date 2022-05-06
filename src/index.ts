@@ -215,6 +215,17 @@ window.addEventListener("load", async () => {
         }, 0);
     };
 
+    /**
+     * @summary formats a url from a list of links and id
+     * @param links list of links to lookup the id in
+     * @param id id to lookup
+     */
+    const hrefFromId = (links: string[], id: string) => {
+        const expr = new RegExp(`\\/${id}\\/`);
+        const url = links.find((url) => expr.test(url));
+        return url || id;
+    };
+
     const processEntry = async (
         entryContainer: Element,
         type: "revisions" | "timeline",
@@ -271,12 +282,6 @@ window.addEventListener("load", async () => {
 
         const fromIds = fromStr.replace(/^from\s+/, "").split(",");
         const toIds = toStr.replace(/^to\s+/, "").split(",");
-
-        const hrefFromId = (links: string[], id: string) => {
-            const expr = new RegExp(`\\/${id}\\/`);
-            const url = links.find((url) => expr.test(url));
-            return url || id;
-        };
 
         const before = fromIds.map((id) => hrefFromId(from, id));
         const after = toIds.map((id) => hrefFromId(to, id));
