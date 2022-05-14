@@ -480,7 +480,7 @@ window.addEventListener("load", function () { return __awaiter(void 0, void 0, v
                     console.debug("[".concat(scriptName, "] missing timeline table"));
                     return [2];
                 }
-                revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
+                revisionActions = new Set(["answered", "asked", "suggested", "duplicates list edited", "edited", "rollback"]);
                 timelineRows = __spreadArray([], __read(timelineTable.rows), false);
                 ri = -1;
                 _e.label = 2;

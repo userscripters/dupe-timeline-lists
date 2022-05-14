@@ -377,7 +377,7 @@ window.addEventListener("load", async () => {
         console.debug(`[${scriptName}] missing timeline table`);
         return;
     }
-    const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
+    const revisionActions = new Set(["answered", "asked", "suggested", "duplicates list edited", "edited", "rollback"]);
     const timelineRows = [...timelineTable.rows];
     let ri = -1;
     for (const row of timelineRows) {

@@ -482,7 +482,7 @@ window.addEventListener("load", async () => {
         return;
     }
 
-    const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
+    const revisionActions = new Set(["answered", "asked", "suggested", "duplicates list edited", "edited", "rollback"]);
 
     const timelineRows = [...timelineTable.rows];
 
