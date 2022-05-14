@@ -55,7 +55,8 @@
 
 "use strict";
 ;
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
+    var _a;
     const appendStyles = (useDiffView, useColorDiffs) => {
         const style = document.createElement("style");
         document.head.append(style);
@@ -283,101 +284,117 @@ window.addEventListener("load", () => {
     const listTypeKey = "list-type";
     const viewKey = "view-type";
     const useColorDiffsKey = "use-color-diffs";
-    unsafeWindow.addEventListener("userscript-configurer-load", async () => {
-        var _a, _b, _c;
-        const configurer = (_b = (_a = unsafeWindow.UserScripters) === null || _a === void 0 ? void 0 : _a.Userscripts) === null || _b === void 0 ? void 0 : _b.Configurer;
-        if (!configurer) {
-            console.debug(`[${scriptName}] missing script configurer`);
-            return;
-        }
-        const script = configurer.register(scriptName);
-        script.option(listTypeKey, {
-            items: [
-                {
-                    label: "Always ordered",
-                    value: "always-ordered"
-                },
-                {
-                    label: "Only multiple",
-                    value: "only-multiple"
-                }
-            ],
-            def: "always-ordered",
-            title: "List type (list view-only)",
-            desc: "",
-            type: "select",
-        });
-        script.option(viewKey, {
-            items: [
-                {
-                    label: "List view",
-                    value: "list"
-                },
-                {
-                    label: "Diff view",
-                    value: "diff"
-                }
-            ],
-            def: "list",
-            title: "View preference",
-            desc: "",
-            type: "select"
-        });
-        script.option(useColorDiffsKey, {
-            def: false,
-            desc: "",
-            title: "Colored diffs (diff view-only)",
-            type: "toggle"
-        });
-        const color = await script.load(useColorDiffsKey, true);
-        const order = await script.load(listTypeKey, "only-multiple");
-        const view = await script.load(viewKey, "list");
-        const alwaysUseLists = order === "always-ordered";
-        const useDiffView = view === "diff";
-        appendStyles(useDiffView, color);
-        if (location.pathname.includes("revisions")) {
-            const revisionsTable = document.querySelector(".js-revisions");
-            if (!revisionsTable) {
-                console.debug(`[${scriptName}] missing revisions table`);
+    const configuration = new Promise((resolve) => {
+        const defaultConfig = {
+            useColoredDiffs: true,
+            alwaysUseLists: true,
+            useDiffView: false
+        };
+        const handle = setTimeout(() => resolve(defaultConfig), 3e3);
+        unsafeWindow.addEventListener("userscript-configurer-load", async () => {
+            var _a, _b;
+            clearTimeout(handle);
+            const configurer = (_b = (_a = unsafeWindow.UserScripters) === null || _a === void 0 ? void 0 : _a.Userscripts) === null || _b === void 0 ? void 0 : _b.Configurer;
+            if (!configurer) {
+                console.debug(`[${scriptName}] missing script configurer`);
+                resolve(defaultConfig);
                 return;
             }
-            revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
-                var _a, _b;
-                const [numCell, commentCell, _authorCell] = row.children;
-                const comment = ((_a = commentCell === null || commentCell === void 0 ? void 0 : commentCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
-                if (!comment.includes("duplicates list edited"))
-                    return;
-                const revisionNum = ((_b = numCell === null || numCell === void 0 ? void 0 : numCell.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
-                if (!revisionNum || Number.isNaN(+revisionNum))
-                    return;
-                processEntry(commentCell, "revisions", revisionNum, alwaysUseLists, useDiffView);
+            const script = configurer.register(scriptName);
+            script.option(listTypeKey, {
+                items: [
+                    {
+                        label: "Always ordered",
+                        value: "always-ordered"
+                    },
+                    {
+                        label: "Only multiple",
+                        value: "only-multiple"
+                    }
+                ],
+                def: "always-ordered",
+                title: "List type (list view-only)",
+                desc: "",
+                type: "select",
             });
+            script.option(viewKey, {
+                items: [
+                    {
+                        label: "List view",
+                        value: "list"
+                    },
+                    {
+                        label: "Diff view",
+                        value: "diff"
+                    }
+                ],
+                def: "list",
+                title: "View preference",
+                desc: "",
+                type: "select"
+            });
+            script.option(useColorDiffsKey, {
+                def: false,
+                desc: "",
+                title: "Colored diffs (diff view-only)",
+                type: "toggle"
+            });
+            const useColoredDiffs = await script.load(useColorDiffsKey, true);
+            const order = await script.load(listTypeKey, "only-multiple");
+            const view = await script.load(viewKey, "list");
+            const alwaysUseLists = order === "always-ordered";
+            const useDiffView = view === "diff";
+            resolve({
+                useColoredDiffs,
+                alwaysUseLists,
+                useDiffView
+            });
+        }, { once: true });
+    });
+    const { alwaysUseLists, useColoredDiffs, useDiffView, } = await configuration;
+    appendStyles(useDiffView, useColoredDiffs);
+    if (location.pathname.includes("revisions")) {
+        const revisionsTable = document.querySelector(".js-revisions");
+        if (!revisionsTable) {
+            console.debug(`[${scriptName}] missing revisions table`);
             return;
         }
-        const timelineTable = document.querySelector(".post-timeline");
-        if (!timelineTable) {
-            console.debug(`[${scriptName}] missing timeline table`);
-            return;
+        revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
+            var _a, _b;
+            const [numCell, commentCell, _authorCell] = row.children;
+            const comment = ((_a = commentCell === null || commentCell === void 0 ? void 0 : commentCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+            if (!comment.includes("duplicates list edited"))
+                return;
+            const revisionNum = ((_b = numCell === null || numCell === void 0 ? void 0 : numCell.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+            if (!revisionNum || Number.isNaN(+revisionNum))
+                return;
+            processEntry(commentCell, "revisions", revisionNum, alwaysUseLists, useDiffView);
+        });
+        return;
+    }
+    const timelineTable = document.querySelector(".post-timeline");
+    if (!timelineTable) {
+        console.debug(`[${scriptName}] missing timeline table`);
+        return;
+    }
+    const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
+    const timelineRows = [...timelineTable.rows];
+    let ri = -1;
+    for (const row of timelineRows) {
+        ri += 1;
+        if (!(ri || ri % 10)) {
+            await delay(500);
         }
-        const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
-        const timelineRows = [...timelineTable.rows];
-        let ri = -1;
-        for (const row of timelineRows) {
-            ri += 1;
-            if (!(ri || ri % 10)) {
-                await delay(500);
-            }
-            const { dataset } = row;
-            const { eventtype } = dataset;
-            if (eventtype !== "history")
-                continue;
-            const { cells } = row;
-            const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
-            const action = ((_c = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || "";
-            if (action !== duplicateListEditAction)
-                continue;
-            const revisionNum = getRevisionNumber(revisionActions, timelineRows, ri);
-            processEntry(commentCell, "timeline", revisionNum, alwaysUseLists, useDiffView);
-        }
-    }, { once: true });
+        const { dataset } = row;
+        const { eventtype } = dataset;
+        if (eventtype !== "history")
+            continue;
+        const { cells } = row;
+        const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
+        const action = ((_a = actionCell === null || actionCell === void 0 ? void 0 : actionCell.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || "";
+        if (action !== duplicateListEditAction)
+            continue;
+        const revisionNum = getRevisionNumber(revisionActions, timelineRows, ri);
+        processEntry(commentCell, "timeline", revisionNum, alwaysUseLists, useDiffView);
+    }
 }, { once: true });
