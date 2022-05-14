@@ -6,7 +6,7 @@
 | Name | @userscripters/dupe-timeline-lists |
 | Description | Userscript for properly displaying duplicate lists in post timelines |
 | License | [GPL-3.0-or-later](https://spdx.org/licenses/GPL-3.0-or-later) |
-| Version | 2.0.0 |
+| Version | 2.0.1 |
 
 The native post timeline displays "duplicate lists edited" event as a barely readable blob of links with excessive verbosity ("duplicate list changed from [list of links] to [list of links]"). This userscript diffs the changes and displays them as easy to visually parse lists of items.
 

@@ -50,7 +50,7 @@
 // @run-at          document-start
 // @source          git+https://github.com/userscripters/dupe-timeline-lists.git
 // @supportURL      https://github.com/userscripters/dupe-timeline-lists/issues
-// @version         2.0.0
+// @version         2.0.1
 // ==/UserScript==
 
 "use strict";
