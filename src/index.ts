@@ -18,9 +18,7 @@ interface ListViewConfig extends ViewConfig {
     ordered: [before?: boolean, after?: boolean];
 };
 
-declare const Store: typeof import("@userscripters/storage");
-
-window.addEventListener("load", async () => {
+window.addEventListener("load", () => {
 
     const appendStyles = (useDiffView: boolean, useColorDiffs: boolean) => {
         const style = document.createElement("style");
@@ -198,10 +196,12 @@ window.addEventListener("load", async () => {
 
     /**
      * @summary gets revision number of the current row
+     * @param revisionActions actions that count as a revision
      * @param rows timeline event rows in DESC order
      * @param rowIndex index of the target row
      */
     const getRevisionNumber = (
+        revisionActions: Set<string>,
         rows: HTMLTableRowElement[],
         rowIndex: number
     ) => {
@@ -235,6 +235,7 @@ window.addEventListener("load", async () => {
         entryContainer: Element,
         type: "revisions" | "timeline",
         revisionNum?: string | number,
+        alwaysUseLists = false,
         useDiffView = false
     ) => {
         const commentContainer = entryContainer.querySelector("span");
@@ -352,80 +353,127 @@ window.addEventListener("load", async () => {
     const duplicateListEditAction = "duplicates list edited";
     const fromToSeparatorText = " to ";
 
-    const storage = Store.locateStorage();
-    const store = new Store.default(scriptName, storage);
-
-    const useListsKey = "always-use-lists";
-    const useDiffKey = "use-diff-view";
+    const listTypeKey = "list-type";
+    const viewKey = "view-type";
     const useColorDiffsKey = "use-color-diffs";
 
-    const alwaysUseLists = await store.load(useListsKey, false);
-    const useDiffView = await store.load(useDiffKey, false);
-    const useColorDiffs = await store.load(useColorDiffsKey, false);
-
-    await store.save(useListsKey, alwaysUseLists);
-    await store.save(useDiffKey, useDiffView);
-    await store.save(useColorDiffsKey, useColorDiffs);
-
-    appendStyles(useDiffView, useColorDiffs);
-
-    if (location.pathname.includes("revisions")) {
-        const revisionsTable = document.querySelector(".js-revisions");
-        if (!revisionsTable) {
-            console.debug(`[${scriptName}] missing revisions table`);
+    unsafeWindow.addEventListener("userscript-configurer-load", async () => {
+        const configurer = unsafeWindow.UserScripters?.Userscripts?.Configurer;
+        if (!configurer) {
+            console.debug(`[${scriptName}] missing script configurer`);
             return;
         }
 
-        revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
-            const [numCell, commentCell, _authorCell] = row.children;
+        const script = configurer.register(scriptName);
 
-            // there are no action types in the revisions table
-            const comment = commentCell?.textContent?.trim() || "";
-            if (!comment.includes("duplicates list edited")) return;
-
-            const revisionNum = numCell?.textContent?.trim() || "";
-            if (!revisionNum || Number.isNaN(+revisionNum)) return;
-
-            processEntry(commentCell, "revisions", revisionNum, useDiffView);
+        script.option(listTypeKey, {
+            items: [
+                {
+                    label: "Always ordered",
+                    value: "always-ordered"
+                },
+                {
+                    label: "Only multiple",
+                    value: "only-multiple"
+                }
+            ],
+            def: "always-ordered",
+            title: "List type (list view-only)",
+            desc: "",
+            type: "select",
         });
 
-        return;
-    }
+        script.option(viewKey, {
+            items: [
+                {
+                    label: "List view",
+                    value: "list"
+                },
+                {
+                    label: "Diff view",
+                    value: "diff"
+                }
+            ],
+            def: "list",
+            title: "View preference",
+            desc: "",
+            type: "select"
+        });
 
-    const timelineTable = document.querySelector<HTMLTableElement>(".post-timeline");
-    if (!timelineTable) {
-        console.debug(`[${scriptName}] missing timeline table`);
-        return;
-    }
+        script.option(useColorDiffsKey, {
+            def: false,
+            desc: "",
+            title: "Colored diffs (diff view-only)",
+            type: "toggle"
+        });
 
-    const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
+        const color = await script.load(useColorDiffsKey, true);
+        const order = await script.load(listTypeKey, "only-multiple");
+        const view = await script.load(viewKey, "list");
 
-    const timelineRows = [...timelineTable.rows];
+        const alwaysUseLists = order === "always-ordered";
+        const useDiffView = view === "diff";
 
-    let ri = -1;
-    for (const row of timelineRows) {
-        ri += 1;
+        appendStyles(useDiffView, color);
 
-        // avoid hammering the /revisions/<num> page
-        if (!(ri || ri % 10)) {
-            await delay(500);
+        if (location.pathname.includes("revisions")) {
+            const revisionsTable = document.querySelector(".js-revisions");
+            if (!revisionsTable) {
+                console.debug(`[${scriptName}] missing revisions table`);
+                return;
+            }
+
+            revisionsTable.querySelectorAll(".js-revision > div").forEach((row) => {
+                const [numCell, commentCell, _authorCell] = row.children;
+
+                // there are no action types in the revisions table
+                const comment = commentCell?.textContent?.trim() || "";
+                if (!comment.includes("duplicates list edited")) return;
+
+                const revisionNum = numCell?.textContent?.trim() || "";
+                if (!revisionNum || Number.isNaN(+revisionNum)) return;
+
+                processEntry(commentCell, "revisions", revisionNum, alwaysUseLists, useDiffView);
+            });
+
+            return;
         }
 
-        const { dataset } = row;
+        const timelineTable = document.querySelector<HTMLTableElement>(".post-timeline");
+        if (!timelineTable) {
+            console.debug(`[${scriptName}] missing timeline table`);
+            return;
+        }
 
-        const { eventtype } = dataset as { eventtype?: TimelineEventType; };
-        if (eventtype !== "history") continue;
+        const revisionActions = new Set(["answered", "asked", "duplicates list edited", "edited", "rollback"]);
 
-        const { cells } = row;
+        const timelineRows = [...timelineTable.rows];
 
-        const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
+        let ri = -1;
+        for (const row of timelineRows) {
+            ri += 1;
 
-        const action = actionCell?.textContent?.trim() || "";
-        if (action !== duplicateListEditAction) continue;
+            // avoid hammering the /revisions/<num> page
+            if (!(ri || ri % 10)) {
+                await delay(500);
+            }
 
-        const revisionNum = getRevisionNumber(timelineRows, ri);
+            const { dataset } = row;
 
-        processEntry(commentCell, "timeline", revisionNum, useDiffView);
-    }
+            const { eventtype } = dataset as { eventtype?: TimelineEventType; };
+            if (eventtype !== "history") continue;
+
+            const { cells } = row;
+
+            const [_dateCell, _typeCell, actionCell, _authorCell, _licenseCell, commentCell] = cells;
+
+            const action = actionCell?.textContent?.trim() || "";
+            if (action !== duplicateListEditAction) continue;
+
+            const revisionNum = getRevisionNumber(revisionActions, timelineRows, ri);
+
+            processEntry(commentCell, "timeline", revisionNum, alwaysUseLists, useDiffView);
+        }
+    }, { once: true });
 
 }, { once: true });

@@ -47,7 +47,6 @@
 // @match           https://superuser.com/posts/*/timeline*
 // @name            Dupe Timeline Lists
 // @namespace       userscripters
-// @require         https://github.com/userscripters/storage/raw/master/dist/browser.js
 // @run-at          document-start
 // @source          git+https://github.com/userscripters/dupe-timeline-lists.git
 // @supportURL      https://github.com/userscripters/dupe-timeline-lists/issues
