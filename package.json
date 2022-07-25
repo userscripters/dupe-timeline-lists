@@ -41,7 +41,7 @@
         "@types/chai-as-promised": "^7.1.5",
         "@types/greasemonkey": "^4.0.3",
         "@types/jquery": "^3.5.14",
-        "@types/jsdom": "^16.2.15",
+        "@types/jsdom": "^20.0.0",
         "@types/mocha": "^9.1.1",
         "@types/node": "^18.0.6",
         "@types/tampermonkey": "^4.0.5",
