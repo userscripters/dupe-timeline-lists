@@ -386,45 +386,45 @@ window.addEventListener("load", async () => {
 
             const script = configurer.register(scriptName, window.Store?.locateStorage());
 
-            script.option(listTypeKey, {
-                items: [
-                    {
-                        label: "Always ordered",
-                        value: "always-ordered"
-                    },
-                    {
-                        label: "Only multiple",
-                        value: "only-multiple"
-                    }
-                ],
-                def: "always-ordered",
-                title: "List type (list view-only)",
-                desc: "",
-                type: "select",
-            });
-
-            script.option(viewKey, {
-                items: [
-                    {
-                        label: "List view",
-                        value: "list"
-                    },
-                    {
-                        label: "Diff view",
-                        value: "diff"
-                    }
-                ],
-                def: "list",
-                title: "View preference",
-                desc: "",
-                type: "select"
-            });
-
-            script.option(useColorDiffsKey, {
-                def: false,
-                desc: "",
-                title: "Colored diffs (diff view-only)",
-                type: "toggle"
+            script.options({
+                [viewKey]: {
+                    items: [
+                        {
+                            label: "List view",
+                            value: "list"
+                        },
+                        {
+                            label: "Diff view",
+                            value: "diff"
+                        }
+                    ],
+                    def: "list",
+                    title: "View preference",
+                    desc: "",
+                    type: "select"
+                },
+                [listTypeKey]: {
+                    items: [
+                        {
+                            label: "Always ordered",
+                            value: "always-ordered"
+                        },
+                        {
+                            label: "Only multiple",
+                            value: "only-multiple"
+                        }
+                    ],
+                    def: "always-ordered",
+                    title: "List type (list view-only)",
+                    desc: "",
+                    type: "select",
+                },
+                [useColorDiffsKey]: {
+                    def: false,
+                    desc: "",
+                    title: "Colored diffs (diff view-only)",
+                    type: "toggle"
+                }
             });
 
             const useColoredDiffs = await script.load(useColorDiffsKey, true);
