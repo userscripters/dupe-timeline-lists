@@ -1,56 +1,57 @@
 // ==UserScript==
-// @author          Oleg Valter <oleg.a.valter@gmail.com>
-// @description     Userscript for properly displaying duplicate lists in post timelines
-// @grant           GM_deleteValue
-// @grant           GM_getValue
-// @grant           GM_setValue
-// @homepage        https://github.com/userscripters/dupe-timeline-lists#readme
-// @match           https://*.stackexchange.com/posts/*/revisions*
-// @match           https://*.stackexchange.com/posts/*/timeline*
-// @match           https://askubuntu.com/posts/*/revisions*
-// @match           https://askubuntu.com/posts/*/timeline*
-// @match           https://es.meta.stackoverflow.com/posts/*/revisions*
-// @match           https://es.meta.stackoverflow.com/posts/*/timeline*
-// @match           https://es.stackoverflow.com/posts/*/revisions*
-// @match           https://es.stackoverflow.com/posts/*/timeline*
-// @match           https://ja.meta.stackoverflow.com/posts/*/revisions*
-// @match           https://ja.meta.stackoverflow.com/posts/*/timeline*
-// @match           https://ja.stackoverflow.com/posts/*/revisions*
-// @match           https://ja.stackoverflow.com/posts/*/timeline*
-// @match           https://mathoverflow.net/posts/*/revisions*
-// @match           https://mathoverflow.net/posts/*/timeline*
-// @match           https://meta.askubuntu.com/posts/*/revisions*
-// @match           https://meta.askubuntu.com/posts/*/timeline*
-// @match           https://meta.mathoverflow.net/posts/*/revisions*
-// @match           https://meta.mathoverflow.net/posts/*/timeline*
-// @match           https://meta.serverfault.com/posts/*/revisions*
-// @match           https://meta.serverfault.com/posts/*/timeline*
-// @match           https://meta.stackoverflow.com/posts/*/revisions*
-// @match           https://meta.stackoverflow.com/posts/*/timeline*
-// @match           https://meta.superuser.com/posts/*/revisions*
-// @match           https://meta.superuser.com/posts/*/timeline*
-// @match           https://pt.meta.stackoverflow.com/posts/*/revisions*
-// @match           https://pt.meta.stackoverflow.com/posts/*/timeline*
-// @match           https://pt.stackoverflow.com/posts/*/revisions*
-// @match           https://pt.stackoverflow.com/posts/*/timeline*
-// @match           https://ru.meta.stackoverflow.com/posts/*/revisions*
-// @match           https://ru.meta.stackoverflow.com/posts/*/timeline*
-// @match           https://ru.stackoverflow.com/posts/*/revisions*
-// @match           https://ru.stackoverflow.com/posts/*/timeline*
-// @match           https://serverfault.com/posts/*/revisions*
-// @match           https://serverfault.com/posts/*/timeline*
-// @match           https://stackapps.com/posts/*/revisions*
-// @match           https://stackapps.com/posts/*/timeline*
-// @match           https://stackoverflow.com/posts/*/revisions*
-// @match           https://stackoverflow.com/posts/*/timeline*
-// @match           https://superuser.com/posts/*/revisions*
-// @match           https://superuser.com/posts/*/timeline*
-// @name            Dupe Timeline Lists
-// @namespace       userscripters
-// @run-at          document-start
-// @source          git+https://github.com/userscripters/dupe-timeline-lists.git
-// @supportURL      https://github.com/userscripters/dupe-timeline-lists/issues
-// @version         2.0.1
+// @name           Dupe Timeline Lists
+// @author         Oleg Valter <oleg.a.valter@gmail.com>
+// @description    Userscript for properly displaying duplicate lists in post timelines
+// @grant          GM_getValue
+// @grant          GM_setValue
+// @grant          GM_deleteValue
+// @homepage       https://github.com/userscripters/dupe-timeline-lists#readme
+// @match          https://stackoverflow.com/posts/*/timeline*
+// @match          https://stackoverflow.com/posts/*/revisions*
+// @match          https://serverfault.com/posts/*/timeline*
+// @match          https://serverfault.com/posts/*/revisions*
+// @match          https://superuser.com/posts/*/timeline*
+// @match          https://superuser.com/posts/*/revisions*
+// @match          https://*.stackexchange.com/posts/*/timeline*
+// @match          https://*.stackexchange.com/posts/*/revisions*
+// @match          https://askubuntu.com/posts/*/timeline*
+// @match          https://askubuntu.com/posts/*/revisions*
+// @match          https://stackapps.com/posts/*/timeline*
+// @match          https://stackapps.com/posts/*/revisions*
+// @match          https://mathoverflow.net/posts/*/timeline*
+// @match          https://mathoverflow.net/posts/*/revisions*
+// @match          https://pt.stackoverflow.com/posts/*/timeline*
+// @match          https://pt.stackoverflow.com/posts/*/revisions*
+// @match          https://ja.stackoverflow.com/posts/*/timeline*
+// @match          https://ja.stackoverflow.com/posts/*/revisions*
+// @match          https://ru.stackoverflow.com/posts/*/timeline*
+// @match          https://ru.stackoverflow.com/posts/*/revisions*
+// @match          https://es.stackoverflow.com/posts/*/timeline*
+// @match          https://es.stackoverflow.com/posts/*/revisions*
+// @match          https://meta.stackoverflow.com/posts/*/timeline*
+// @match          https://meta.stackoverflow.com/posts/*/revisions*
+// @match          https://meta.serverfault.com/posts/*/timeline*
+// @match          https://meta.serverfault.com/posts/*/revisions*
+// @match          https://meta.superuser.com/posts/*/timeline*
+// @match          https://meta.superuser.com/posts/*/revisions*
+// @match          https://meta.askubuntu.com/posts/*/timeline*
+// @match          https://meta.askubuntu.com/posts/*/revisions*
+// @match          https://meta.mathoverflow.net/posts/*/timeline*
+// @match          https://meta.mathoverflow.net/posts/*/revisions*
+// @match          https://pt.meta.stackoverflow.com/posts/*/timeline*
+// @match          https://pt.meta.stackoverflow.com/posts/*/revisions*
+// @match          https://ja.meta.stackoverflow.com/posts/*/timeline*
+// @match          https://ja.meta.stackoverflow.com/posts/*/revisions*
+// @match          https://ru.meta.stackoverflow.com/posts/*/timeline*
+// @match          https://ru.meta.stackoverflow.com/posts/*/revisions*
+// @match          https://es.meta.stackoverflow.com/posts/*/timeline*
+// @match          https://es.meta.stackoverflow.com/posts/*/revisions*
+// @namespace      userscripters
+// @require        https://raw.githubusercontent.com/userscripters/storage/master/dist/browser.js
+// @run-at         document-start
+// @source         git+https://github.com/userscripters/dupe-timeline-lists.git
+// @supportURL     https://github.com/userscripters/dupe-timeline-lists/issues
+// @version        3.0.0
 // ==/UserScript==
 
 "use strict";
@@ -292,7 +293,7 @@ window.addEventListener("load", async () => {
         };
         const handle = setTimeout(() => resolve(defaultConfig), 3e3);
         unsafeWindow.addEventListener("userscript-configurer-load", async () => {
-            var _a, _b;
+            var _a, _b, _c;
             clearTimeout(handle);
             const configurer = (_b = (_a = unsafeWindow.UserScripters) === null || _a === void 0 ? void 0 : _a.Userscripts) === null || _b === void 0 ? void 0 : _b.Configurer;
             if (!configurer) {
@@ -300,44 +301,52 @@ window.addEventListener("load", async () => {
                 resolve(defaultConfig);
                 return;
             }
-            const script = configurer.register(scriptName);
-            script.option(listTypeKey, {
-                items: [
-                    {
-                        label: "Always ordered",
-                        value: "always-ordered"
+            const script = configurer.register(scriptName, (_c = window.Store) === null || _c === void 0 ? void 0 : _c.locateStorage());
+            script.options({
+                [viewKey]: {
+                    items: [
+                        {
+                            label: "List view",
+                            value: "list"
+                        },
+                        {
+                            label: "Diff view",
+                            value: "diff"
+                        }
+                    ],
+                    def: "list",
+                    title: "View preference",
+                    desc: "",
+                    type: "select"
+                },
+                [listTypeKey]: {
+                    items: [
+                        {
+                            label: "Always ordered",
+                            value: "always-ordered"
+                        },
+                        {
+                            label: "Only multiple",
+                            value: "only-multiple"
+                        }
+                    ],
+                    def: "always-ordered",
+                    disabledWhen: {
+                        [viewKey]: "diff",
                     },
-                    {
-                        label: "Only multiple",
-                        value: "only-multiple"
-                    }
-                ],
-                def: "always-ordered",
-                title: "List type (list view-only)",
-                desc: "",
-                type: "select",
-            });
-            script.option(viewKey, {
-                items: [
-                    {
-                        label: "List view",
-                        value: "list"
+                    title: "List type (list view-only)",
+                    desc: "",
+                    type: "select",
+                },
+                [useColorDiffsKey]: {
+                    def: false,
+                    desc: "",
+                    disabledWhen: {
+                        [viewKey]: "list",
                     },
-                    {
-                        label: "Diff view",
-                        value: "diff"
-                    }
-                ],
-                def: "list",
-                title: "View preference",
-                desc: "",
-                type: "select"
-            });
-            script.option(useColorDiffsKey, {
-                def: false,
-                desc: "",
-                title: "Colored diffs (diff view-only)",
-                type: "toggle"
+                    title: "Colored diffs (diff view-only)",
+                    type: "toggle"
+                }
             });
             const useColoredDiffs = await script.load(useColorDiffsKey, true);
             const order = await script.load(listTypeKey, "only-multiple");
