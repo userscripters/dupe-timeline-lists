@@ -384,7 +384,7 @@ window.addEventListener("load", async () => {
                 return;
             }
 
-            const script = configurer.register(scriptName);
+            const script = configurer.register(scriptName, window.Store?.locateStorage());
 
             script.option(listTypeKey, {
                 items: [
