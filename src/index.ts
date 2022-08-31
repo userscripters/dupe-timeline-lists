@@ -415,6 +415,9 @@ window.addEventListener("load", async () => {
                         }
                     ],
                     def: "always-ordered",
+                    disabledWhen: {
+                        [viewKey]: "diff",
+                    },
                     title: "List type (list view-only)",
                     desc: "",
                     type: "select",
@@ -422,6 +425,9 @@ window.addEventListener("load", async () => {
                 [useColorDiffsKey]: {
                     def: false,
                     desc: "",
+                    disabledWhen: {
+                        [viewKey]: "list",
+                    },
                     title: "Colored diffs (diff view-only)",
                     type: "toggle"
                 }
